@@ -1,0 +1,692 @@
+--- mini_httpd-1.19.o/Makefile
++++ mini_httpd-1.19/Makefile
+@@ -20,8 +20,8 @@
+ #SSL_LIBS =	-L${SSL_TREE}/lib -lssl -lcrypto
+ 
+ 
+-BINDIR =	/usr/local/sbin
+-MANDIR =	/usr/local/man
++BINDIR =	/sbin
++MANDIR =	/man
+ CC =		gcc
+ CDEFS =		${SSL_DEFS} ${SSL_INC}
+ CFLAGS =	-O ${CDEFS}
+--- mini_httpd-1.19.o/htpasswd.c
++++ mini_httpd-1.19/htpasswd.c
+@@ -49,7 +49,7 @@
+     while((line[y++] = line[x++]));
+ }
+ 
+-static int getline(char *s, int n, FILE *f) {
++static int my_getline(char *s, int n, FILE *f) {
+     register int i=0;
+ 
+     while(1) {
+@@ -189,7 +189,7 @@
+     strcpy(user,argv[2]);
+ 
+     found = 0;
+-    while(!(getline(line,MAX_STRING_LEN,f))) {
++    while(!(my_getline(line,MAX_STRING_LEN,f))) {
+         if(found || (line[0] == '#') || (!line[0])) {
+             putline(tfp,line);
+             continue;
+--- mini_httpd-1.19.o/mini_httpd.c
++++ mini_httpd-1.19/mini_httpd.c
+@@ -33,7 +33,6 @@
+ #include <stdarg.h>
+ #include <stdio.h>
+ #include <string.h>
+-#include <syslog.h>
+ #include <limits.h>
+ #include <sys/param.h>
+ #include <sys/types.h>
+@@ -132,10 +131,10 @@
+ #define CGI_NICE 10
+ #endif /* CGI_NICE */
+ #ifndef CGI_PATH
+-#define CGI_PATH "/usr/local/bin:/usr/ucb:/bin:/usr/bin"
++#define CGI_PATH "/bin:/local/bin"
+ #endif /* CGI_PATH */
+ #ifndef CGI_LD_LIBRARY_PATH
+-#define CGI_LD_LIBRARY_PATH "/usr/local/lib:/usr/lib"
++#define CGI_LD_LIBRARY_PATH "/lib:/local/lib"
+ #endif /* CGI_LD_LIBRARY_PATH */
+ #ifndef AUTH_FILE
+ #define AUTH_FILE ".htpasswd"
+@@ -144,10 +143,10 @@
+ #define READ_TIMEOUT 60
+ #endif /* READ_TIMEOUT */
+ #ifndef WRITE_TIMEOUT
+-#define WRITE_TIMEOUT 300
++#define WRITE_TIMEOUT 14400
+ #endif /* WRITE_TIMEOUT */
+ #ifndef DEFAULT_CHARSET
+-#define DEFAULT_CHARSET "iso-8859-1"
++#define DEFAULT_CHARSET "UTF-8"
+ #endif /* DEFAULT_CHARSET */
+ 
+ 
+@@ -177,6 +176,7 @@
+ static int vhost;
+ static char* user;
+ static char* cgi_pattern;
++static char* cgi_fname;
+ static char* url_pattern;
+ static int no_empty_referers;
+ static char* local_pattern;
+@@ -186,6 +186,7 @@
+ static char* pidfile;
+ static char* charset;
+ static char* p3p;
++static char* xrealip;
+ static int max_age;
+ static FILE* logfp;
+ static int listen4_fd, listen6_fd;
+@@ -226,6 +227,7 @@
+ static time_t if_modified_since;
+ static char* referer;
+ static char* useragent;
++static char* remote_addr;
+ 
+ static char* remoteuser;
+ 
+@@ -327,11 +329,13 @@
+     do_chroot = 0;
+     vhost = 0;
+     cgi_pattern = (char*) 0;
++    cgi_fname = (char*) 0;
+     url_pattern = (char*) 0;
+     no_empty_referers = 0;
+     local_pattern = (char*) 0;
+     charset = DEFAULT_CHARSET;
+     p3p = (char*) 0;
++    xrealip = (char*) 0;
+     max_age = -1;
+     user = DEFAULT_USER;
+     hostname = (char*) 0;
+@@ -392,6 +396,11 @@
+ 	    ++argn;
+ 	    cgi_pattern = argv[argn];
+ 	    }
++	else if ( strcmp( argv[argn], "-cc" ) == 0 && argn + 1 < argc )
++	    {
++	    ++argn;
++	    cgi_fname = argv[argn];
++	    }
+ 	else if ( strcmp( argv[argn], "-u" ) == 0 && argn + 1 < argc )
+ 	    {
+ 	    ++argn;
+@@ -426,6 +435,11 @@
+ 	    ++argn;
+ 	    p3p = argv[argn];
+ 	    }
++	else if ( strcmp( argv[argn], "-X" ) == 0 && argn + 1 < argc )
++	    {
++	    ++argn;
++	    xrealip = argv[argn];
++	    }
+ 	else if ( strcmp( argv[argn], "-M" ) == 0 && argn + 1 < argc )
+ 	    {
+ 	    ++argn;
+@@ -443,7 +457,6 @@
+ 	++cp;
+     else
+ 	cp = argv0;
+-    openlog( cp, LOG_NDELAY|LOG_PID, LOG_DAEMON );
+ 
+     if ( port == 0 )
+ 	{
+@@ -465,7 +478,6 @@
+ 	pwd = getpwnam( user );
+ 	if ( pwd == (struct passwd*) 0 )
+ 	    {
+-	    syslog( LOG_CRIT, "unknown user - '%s'", user );
+ 	    (void) fprintf( stderr, "%s: unknown user - '%s'\n", argv0, user );
+ 	    exit( 1 );
+ 	    }
+@@ -479,13 +491,11 @@
+ 	logfp = fopen( logfile, "a" );
+ 	if ( logfp == (FILE*) 0 )
+ 	    {
+-	    syslog( LOG_CRIT, "%s - %m", logfile );
+ 	    perror( logfile );
+ 	    exit( 1 );
+ 	    }
+ 	if ( logfile[0] != '/' )
+ 	    {
+-	    syslog( LOG_WARNING, "logfile is not an absolute path, you may not be able to re-open it" );
+ 	    (void) fprintf( stderr, "%s: logfile is not an absolute path, you may not be able to re-open it\n", argv0 );
+ 	    }
+ 	if ( getuid() == 0 )
+@@ -495,7 +505,6 @@
+ 	    */
+ 	    if ( fchown( fileno( logfp ), uid, gid ) < 0 )
+ 		{
+-		syslog( LOG_WARNING, "fchown logfile - %m" );
+ 		perror( "fchown logfile" );
+ 		}
+ 	    }
+@@ -512,7 +521,6 @@
+ 	}
+     if ( ! ( gotv4 || gotv6 ) )
+ 	{
+-	syslog( LOG_CRIT, "can't find any valid address" );
+ 	(void) fprintf( stderr, "%s: can't find any valid address\n", argv0 );
+ 	exit( 1 );
+ 	}
+@@ -532,7 +540,6 @@
+     /* If we didn't get any valid sockets, fail. */
+     if ( listen4_fd == -1 && listen6_fd == -1 )
+ 	{
+-	syslog( LOG_CRIT, "can't bind to any address" );
+ 	(void) fprintf( stderr, "%s: can't bind to any address\n", argv0 );
+ 	exit( 1 );
+ 	}
+@@ -568,7 +575,6 @@
+ #ifdef HAVE_DAEMON
+ 	if ( daemon( 1, 1 ) < 0 )
+ 	    {
+-	    syslog( LOG_CRIT, "daemon - %m" );
+ 	    perror( "daemon" );
+ 	    exit( 1 );
+ 	    }
+@@ -578,7 +584,6 @@
+ 	    case 0:
+ 	    break;
+ 	    case -1:
+-	    syslog( LOG_CRIT, "fork - %m" );
+ 	    perror( "fork" );
+ 	    exit( 1 );
+ 	    default:
+@@ -605,7 +610,6 @@
+ 	FILE* pidfp = fopen( pidfile, "w" );
+         if ( pidfp == (FILE*) 0 )
+             {
+-	    syslog( LOG_CRIT, "%s - %m", pidfile );
+ 	    perror( pidfile );
+             exit( 1 );
+             }
+@@ -622,21 +626,18 @@
+ 	/* Set aux groups to null. */
+ 	if ( setgroups( 0, (gid_t*) 0 ) < 0 )
+ 	    {
+-	    syslog( LOG_CRIT, "setgroups - %m" );
+ 	    perror( "setgroups" );
+ 	    exit( 1 );
+ 	    }
+ 	/* Set primary group. */
+ 	if ( setgid( gid ) < 0 )
+ 	    {
+-	    syslog( LOG_CRIT, "setgid - %m" );
+ 	    perror( "setgid" );
+ 	    exit( 1 );
+ 	    }
+ 	/* Try setting aux groups correctly - not critical if this fails. */
+ 	if ( initgroups( user, gid ) < 0 )
+ 	    {
+-	    syslog( LOG_ERR, "initgroups - %m" );
+ 	    perror( "initgroups" );
+ 	    }
+ #ifdef HAVE_SETLOGIN
+@@ -650,7 +651,6 @@
+ 	{
+ 	if ( chdir( dir ) < 0 )
+ 	    {
+-	    syslog( LOG_CRIT, "chdir - %m" );
+ 	    perror( "chdir" );
+ 	    exit( 1 );
+ 	    }
+@@ -666,7 +666,6 @@
+ 	{
+ 	if ( chroot( cwd ) < 0 )
+ 	    {
+-	    syslog( LOG_CRIT, "chroot - %m" );
+ 	    perror( "chroot" );
+ 	    exit( 1 );
+ 	    }
+@@ -686,14 +685,12 @@
+ 		}
+ 	    else
+ 		{
+-		syslog( LOG_WARNING, "logfile is not within the chroot tree, you will not be able to re-open it" );
+ 		(void) fprintf( stderr, "%s: logfile is not within the chroot tree, you will not be able to re-open it\n", argv0 );
+ 		}
+ 	(void) strcpy( cwd, "/" );
+ 	/* Always chdir to / after a chroot. */
+ 	if ( chdir( cwd ) < 0 )
+ 	    {
+-	    syslog( LOG_CRIT, "chroot chdir - %m" );
+ 	    perror( "chroot chdir" );
+ 	    exit( 1 );
+ 	    }
+@@ -705,7 +702,6 @@
+ 	{
+ 	if ( chdir( data_dir ) < 0 )
+ 	    {
+-	    syslog( LOG_CRIT, "data_dir chdir - %m" );
+ 	    perror( "data_dir chdir" );
+ 	    exit( 1 );
+ 	    }
+@@ -717,15 +713,12 @@
+ 	/* Set uid. */
+ 	if ( setuid( uid ) < 0 )
+ 	    {
+-	    syslog( LOG_CRIT, "setuid - %m" );
+ 	    perror( "setuid" );
+ 	    exit( 1 );
+ 	    }
+ 	/* Check for unnecessary security exposure. */
+ 	if ( ! do_chroot )
+ 	    {
+-	    syslog( LOG_WARNING,
+-		"started as root without requesting chroot(), warning only" );
+ 	    (void) fprintf( stderr,
+ 		"%s: started as root without requesting chroot(), warning only\n", argv0 );
+ 	    }
+@@ -751,15 +744,6 @@
+ 
+     init_mime();
+ 
+-    if ( hostname == (char*) 0 )
+-	syslog(
+-	    LOG_NOTICE, "%.80s starting on port %d", SERVER_SOFTWARE,
+-	    (int) port );
+-    else
+-	syslog(
+-	    LOG_NOTICE, "%.80s starting on %.80s, port %d", SERVER_SOFTWARE,
+-	    hostname, (int) port );
+-
+     /* Main loop. */
+     for (;;)
+ 	{
+@@ -797,7 +781,6 @@
+ 	    {
+ 	    if ( errno == EINTR || errno == EAGAIN )
+ 		continue;	/* try again */
+-	    syslog( LOG_CRIT, "select - %m" );
+ 	    perror( "select" );
+ 	    exit( 1 );
+ 	    }
+@@ -810,7 +793,6 @@
+ 	    conn_fd = accept( listen6_fd, &usa.sa, &sz );
+ 	else
+ 	    {
+-	    syslog( LOG_CRIT, "select failure" );
+ 	    (void) fprintf( stderr, "%s: select failure\n", argv0 );
+ 	    exit( 1 );
+ 	    }
+@@ -822,7 +804,6 @@
+ 	    if ( errno == EPROTO )
+ 		continue;	/* try again */
+ #endif /* EPROTO */
+-	    syslog( LOG_CRIT, "accept - %m" );
+ 	    perror( "accept" );
+ 	    exit( 1 );
+ 	    }
+@@ -831,7 +812,6 @@
+ 	r = fork();
+ 	if ( r < 0 )
+ 	    {
+-	    syslog( LOG_CRIT, "fork - %m" );
+ 	    perror( "fork" );
+ 	    exit( 1 );
+ 	    }
+@@ -876,7 +856,6 @@
+     fp = fopen( filename, "r" );
+     if ( fp == (FILE*) 0 )
+ 	{
+-	syslog( LOG_CRIT, "%s - %m", filename );
+ 	perror( filename );
+ 	exit( 1 );
+ 	}
+@@ -990,6 +969,11 @@
+ 		value_required( name, value );
+ 		p3p = e_strdup( value );
+ 		}
++	    else if ( strcasecmp( name, "xrealip" ) == 0 )
++		{
++		value_required( name, value );
++		xrealip = e_strdup( value );
++		}
+ 	    else if ( strcasecmp( name, "max_age" ) == 0 )
+ 		{
+ 		value_required( name, value );
+@@ -1063,9 +1047,6 @@
+     /* Check sockaddr. */
+     if ( ! sockaddr_check( usaP ) )
+ 	{
+-	syslog(
+-	    LOG_ERR, "unknown sockaddr family on listen socket - %d",
+-	    usaP->sa.sa_family );
+ 	(void) fprintf(
+ 	    stderr, "%s: unknown sockaddr family on listen socket - %d\n",
+ 	    argv0, usaP->sa.sa_family );
+@@ -1075,7 +1056,6 @@
+     listen_fd = socket( usaP->sa.sa_family, SOCK_STREAM, 0 );
+     if ( listen_fd < 0 )
+ 	{
+-	syslog( LOG_CRIT, "socket %.80s - %m", ntoa( usaP ) );
+ 	perror( "socket" );
+ 	return -1;
+ 	}
+@@ -1085,21 +1065,18 @@
+     i = 1;
+     if ( setsockopt( listen_fd, SOL_SOCKET, SO_REUSEADDR, (void*) &i, sizeof(i) ) < 0 )
+ 	{
+-	syslog( LOG_CRIT, "setsockopt SO_REUSEADDR - %m" );
+ 	perror( "setsockopt SO_REUSEADDR" );
+ 	return -1;
+ 	}
+ 
+     if ( bind( listen_fd, &usaP->sa, sockaddr_len( usaP ) ) < 0 )
+ 	{
+-	syslog( LOG_CRIT, "bind %.80s - %m", ntoa( usaP ) );
+ 	perror( "bind" );
+ 	return -1;
+ 	}
+ 
+     if ( listen( listen_fd, 1024 ) < 0 )
+ 	{
+-	syslog( LOG_CRIT, "listen - %m" );
+ 	perror( "listen" );
+ 	return -1;
+ 	}
+@@ -1159,6 +1136,7 @@
+     if_modified_since = (time_t) -1;
+     referer = "";
+     useragent = "";
++    remote_addr = ntoa( &client_addr );
+ 
+ #ifdef TCP_NOPUSH
+     /* Set the TCP_NOPUSH socket option, to try and avoid the 0.2 second
+@@ -1276,6 +1254,15 @@
+ 	    cp += strspn( cp, " \t" );
+ 	    useragent = cp;
+ 	    }
++	else if ( strncasecmp( line, "X-Real-IP:", 10 ) == 0 )
++	    {
++	    if ( strcmp(remote_addr, xrealip ) == 0 )
++		{
++		cp = &line[10];
++		cp += strspn( cp, " \t" );
++		remote_addr = cp;
++		}
++	    }
+ 	}
+ 
+     if ( strcasecmp( method_str, get_method_str( METHOD_GET ) ) == 0 )
+@@ -1309,6 +1296,12 @@
+ #endif /* HAVE_SIGSET */
+     (void) alarm( WRITE_TIMEOUT );
+ 
++    if (cgi_fname) 
++        {
++        file = cgi_fname;
++        do_cgi();
++        }
++
+     r = stat( file, &sb );
+     if ( r < 0 )
+ 	r = get_pathinfo();
+@@ -1350,7 +1343,8 @@
+ 	    if ( stat( idx, &sb ) >= 0 )
+ 		{
+ 		file = idx;
+-		do_file();
++		if (strstr(index_names[i], ".cgi")) do_cgi();
++		else do_file();
+ 		goto got_one;
+ 		}
+ 	    }
+@@ -1469,9 +1463,6 @@
+ 	 ( strcmp( &(file[strlen(file) - sizeof(AUTH_FILE) + 1]), AUTH_FILE ) == 0 &&
+ 	   file[strlen(file) - sizeof(AUTH_FILE)] == '/' ) )
+ 	{
+-	syslog(
+-	    LOG_NOTICE, "%.80s URL \"%.80s\" tried to retrieve an auth file",
+-	    ntoa( &client_addr ), path );
+ 	send_error( 403, "Forbidden", "", "File is protected." );
+ 	}
+ 
+@@ -1490,9 +1481,6 @@
+     fd = open( file, O_RDONLY );
+     if ( fd < 0 )
+ 	{
+-	syslog(
+-	    LOG_INFO, "%.80s File \"%.80s\" is protected",
+-	    ntoa( &client_addr ), path );
+ 	send_error( 403, "Forbidden", "", "File is protected." );
+ 	}
+     mime_type = figure_mime( file, mime_encodings, sizeof(mime_encodings) );
+@@ -1567,9 +1555,6 @@
+     n = scandir( file, &dl, NULL, alphasort );
+     if ( n < 0 )
+ 	{
+-	syslog(
+-	    LOG_INFO, "%.80s Directory \"%.80s\" is protected",
+-	    ntoa( &client_addr ), path );
+ 	send_error( 403, "Forbidden", "", "Directory is protected." );
+ 	}
+ #endif /* HAVE_SCANDIR */
+@@ -1624,7 +1609,7 @@
+ 	SERVER_URL, SERVER_SOFTWARE );
+     add_to_buf( &contents, &contents_size, &contents_len, buf, buflen );
+ 
+-    add_headers( 200, "Ok", "", "", "text/html; charset=%s", contents_len, sb.st_mtime );
++    add_headers( 200, "Ok", "", "", "text/html; charset=" DEFAULT_CHARSET, contents_len, sb.st_mtime );
+     if ( method != METHOD_HEAD )
+ 	add_to_response( contents, contents_len );
+     send_response();
+@@ -1814,9 +1799,6 @@
+     if ( logfp != (FILE*) 0 )
+ 	(void) fclose( logfp );
+ 
+-    /* Close syslog. */
+-    closelog();
+-
+     /* Set priority. */
+     (void) nice( CGI_NICE );
+ 
+@@ -1842,7 +1824,7 @@
+ #endif /* HAVE_SIGSET */
+ 
+     /* Run the program. */
+-    (void) execve( binary, argp, envp );
++    (void) execve( cgi_fname ? cgi_fname : binary, argp, envp );
+ 
+     /* Something went wrong. */
+     send_error( 500, "Internal Error", "", "Something unexpected went wrong running a CGI program." );
+@@ -2134,7 +2116,8 @@
+     envp[envn++] = build_env( "SERVER_PORT=%s", buf );
+     envp[envn++] = build_env(
+ 	"REQUEST_METHOD=%s", get_method_str( method ) );
+-    envp[envn++] = build_env( "SCRIPT_NAME=%s", path );
++    envp[envn++] = build_env( "SCRIPT_NAME=%s", cgi_fname ? cgi_fname : path );
++    envp[envn++] = build_env( "REQUEST_URI=%s", path );
+     if ( pathinfo != (char*) 0 )
+ 	{
+ 	envp[envn++] = build_env( "PATH_INFO=/%s", pathinfo );
+@@ -2143,7 +2126,7 @@
+ 	}
+     if ( query[0] != '\0' )
+ 	envp[envn++] = build_env( "QUERY_STRING=%s", query );
+-    envp[envn++] = build_env( "REMOTE_ADDR=%s", ntoa( &client_addr ) );
++    envp[envn++] = build_env( "REMOTE_ADDR=%s", remote_addr );
+     if ( referer[0] != '\0' )
+ 	envp[envn++] = build_env( "HTTP_REFERER=%s", referer );
+     if ( useragent[0] != '\0' )
+@@ -2253,9 +2236,6 @@
+     if ( fp == (FILE*) 0 )
+ 	{
+ 	/* The file exists but we can't open it?  Disallow access. */
+-	syslog(
+-	    LOG_ERR, "%.80s auth file %.80s could not be opened - %m",
+-	    ntoa( &client_addr ), authpath );
+ 	send_error( 403, "Forbidden", "", "File is protected." );
+ 	}
+ 
+@@ -2337,7 +2317,7 @@
+ send_error( int s, char* title, char* extra_header, char* text )
+     {
+     add_headers(
+-	s, title, extra_header, "", "text/html; charset=%s", (off_t) -1, (time_t) -1 );
++	s, title, extra_header, "", "text/html; charset=" DEFAULT_CHARSET, (off_t) -1, (time_t) -1 );
+ 
+     send_error_body( s, title, text );
+ 
+@@ -2759,7 +2739,7 @@
+     /* And write the log entry. */
+     (void) fprintf( logfp,
+ 	"%.80s - %.80s [%s] \"%.80s %.200s %.80s\" %d %s \"%.200s\" \"%.200s\"\n",
+-	ntoa( &client_addr ), ru, date, get_method_str( method ), url,
++	remote_addr, ru, date, get_method_str( method ), url,
+ 	protocol, status, bytes_str, referer, useragent );
+     (void) fflush( logfp );
+     }
+@@ -2788,9 +2768,6 @@
+ 	cp = hostname;
+     if ( cp == (char*) 0 )
+ 	cp = "";
+-    syslog(
+-	LOG_INFO, "%.80s non-local referer \"%.80s%.80s\" \"%.80s\"",
+-	ntoa( &client_addr ), cp, path, referer );
+     send_error( 403, "Forbidden", "", "You must supply a local referer." );
+     }
+ 
+@@ -3034,7 +3011,6 @@
+     {
+     /* Don't need to set up the handler again, since it's a one-shot. */
+ 
+-    syslog( LOG_NOTICE, "exiting due to signal %d", sig );
+     (void) fprintf( stderr, "%s: exiting due to signal %d\n", argv0, sig );
+     closelog();
+     exit( 1 );
+@@ -3091,7 +3067,6 @@
+ 	    */
+ 	    if ( errno != ECHILD )
+ 		{
+-		syslog( LOG_ERR, "child wait - %m" );
+ 		perror( "child wait" );
+ 		}
+ 	    break;
+@@ -3113,11 +3088,9 @@
+ 	}
+     if ( logfile != (char*) 0 )
+ 	{
+-	syslog( LOG_NOTICE, "re-opening logfile" );
+ 	logfp = fopen( logfile, "a" );
+ 	if ( logfp == (FILE*) 0 )
+ 	    {
+-	    syslog( LOG_CRIT, "%s - %m", logfile );
+ 	    perror( logfile );
+ 	    exit( 1 );
+ 	    }
+@@ -3128,7 +3101,6 @@
+ static void
+ handle_read_timeout( int sig )
+     {
+-    syslog( LOG_INFO, "%.80s connection timed out reading", ntoa( &client_addr ) );
+     send_error(
+ 	408, "Request Timeout", "",
+ 	"No request appeared within a reasonable time period." );
+@@ -3138,7 +3110,6 @@
+ static void
+ handle_write_timeout( int sig )
+     {
+-    syslog( LOG_INFO, "%.80s connection timed out writing", ntoa( &client_addr ) );
+     exit( 1 );
+     }
+ 
+@@ -3164,9 +3135,6 @@
+     (void) snprintf( portstr, sizeof(portstr), "%d", (int) port );
+     if ( (gaierr = getaddrinfo( hostname, portstr, &hints, &ai )) != 0 )
+ 	{
+-	syslog(
+-	    LOG_CRIT, "getaddrinfo %.80s - %s", hostname,
+-	    gai_strerror( gaierr ) );
+ 	(void) fprintf(
+ 	    stderr, "%s: getaddrinfo %.80s - %s\n", argv0, hostname,
+ 	    gai_strerror( gaierr ) );
+@@ -3197,10 +3165,6 @@
+ 	{
+ 	if ( sa6_len < aiv6->ai_addrlen )
+ 	    {
+-	    syslog(
+-		LOG_CRIT, "%.80s - sockaddr too small (%lu < %lu)",
+-		hostname, (unsigned long) sa6_len,
+-		(unsigned long) aiv6->ai_addrlen );
+ 	    (void) fprintf(
+ 		stderr, "%s: %.80s - sockaddr too small (%lu < %lu)\n",
+ 		argv0, hostname, (unsigned long) sa6_len,
+@@ -3218,10 +3182,6 @@
+ 	{
+ 	if ( sa4_len < aiv4->ai_addrlen )
+ 	    {
+-	    syslog(
+-		LOG_CRIT, "%.80s - sockaddr too small (%lu < %lu)",
+-		hostname, (unsigned long) sa4_len,
+-		(unsigned long) aiv4->ai_addrlen );
+ 	    (void) fprintf(
+ 		stderr, "%s: %.80s - sockaddr too small (%lu < %lu)\n",
+ 		argv0, hostname, (unsigned long) sa4_len,
+@@ -3254,14 +3214,10 @@
+ 	    if ( he == (struct hostent*) 0 )
+ 		{
+ #ifdef HAVE_HSTRERROR
+-		syslog(
+-		    LOG_CRIT, "gethostbyname %.80s - %s", hostname,
+-		    hstrerror( h_errno ) );
+ 		(void) fprintf(
+ 		    stderr, "%s: gethostbyname %.80s - %s\n", argv0, hostname,
+ 		    hstrerror( h_errno ) );
+ #else /* HAVE_HSTRERROR */
+-		syslog( LOG_CRIT, "gethostbyname %.80s failed", hostname );
+ 		(void) fprintf(
+ 		    stderr, "%s: gethostbyname %.80s failed\n", argv0,
+ 		    hostname );
+@@ -3270,7 +3226,6 @@
+ 		}
+ 	    if ( he->h_addrtype != AF_INET )
+ 		{
+-		syslog( LOG_CRIT, "%.80s - non-IP network address", hostname );
+ 		(void) fprintf(
+ 		    stderr, "%s: %.80s - non-IP network address\n", argv0,
+ 		    hostname );
+@@ -3496,7 +3451,6 @@
+     ptr = malloc( size );
+     if ( ptr == (void*) 0 )
+ 	{
+-	syslog( LOG_CRIT, "out of memory" );
+ 	(void) fprintf( stderr, "%s: out of memory\n", argv0 );
+ 	exit( 1 );
+ 	}
+@@ -3512,7 +3466,6 @@
+     ptr = realloc( optr, size );
+     if ( ptr == (void*) 0 )
+ 	{
+-	syslog( LOG_CRIT, "out of memory" );
+ 	(void) fprintf( stderr, "%s: out of memory\n", argv0 );
+ 	exit( 1 );
+ 	}
+@@ -3528,7 +3481,6 @@
+     str = strdup( ostr );
+     if ( str == (char*) 0 )
+ 	{
+-	syslog( LOG_CRIT, "out of memory copying a string" );
+ 	(void) fprintf( stderr, "%s: out of memory copying a string\n", argv0 );
+ 	exit( 1 );
+ 	}
+--- mini_httpd-1.19.o/port.h
++++ mini_httpd-1.19/port.h
+@@ -74,8 +74,8 @@
+ # define HAVE_SETSID
+ # define HAVE_WAITPID
+ # define HAVE_TM_GMTOFF
+-# define HAVE_SENDFILE
+-# define HAVE_LINUX_SENDFILE
++/* # define HAVE_SENDFILE
++# define HAVE_LINUX_SENDFILE */
+ # define HAVE_SCANDIR
+ # define HAVE_INT64T
+ #endif /* OS_Linux */

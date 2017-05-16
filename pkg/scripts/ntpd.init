@@ -1,0 +1,9 @@
+#!/bin/sh
+case "${1}" in
+	k)
+		pkill -f /sbin/ntpd
+	;;
+	*)
+		/sbin/spawn -c /dev/null -t 5000000 /bin/minenv /sbin/ntpd -n -Nl -p 0.pool.ntp.org -p 1.pool.ntp.org
+	;;
+esac

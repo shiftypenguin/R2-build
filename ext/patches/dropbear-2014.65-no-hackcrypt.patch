@@ -1,0 +1,28 @@
+--- dropbear-2014.65.o/debug.h
++++ dropbear-2014.65/debug.h
+@@ -73,11 +73,4 @@
+    You will need to pass "-F" as well. */
+ /* #define DEBUG_NOFORK */
+ 
+-
+-/* For testing as non-root on shadowed systems, include the crypt of a password
+- * here. You can then log in as any user with this password. Ensure that you
+- * make your own password, and are careful about using this. This will also
+- * disable some of the chown pty code etc*/
+-/* #define DEBUG_HACKCRYPT "hL8nrFDt0aJ3E" */ /* this is crypt("password") */
+-
+ #endif
+--- dropbear-2014.65.o/svr-authpasswd.c
++++ dropbear-2014.65/svr-authpasswd.c
+@@ -57,11 +57,6 @@
+ 
+ 	passwdcrypt = ses.authstate.pw_passwd;
+ 
+-#ifdef DEBUG_HACKCRYPT
+-	/* debugging crypt for non-root testing with shadows */
+-	passwdcrypt = DEBUG_HACKCRYPT;
+-#endif
+-
+ 	/* check if client wants to change password */
+ 	changepw = buf_getbool(ses.payload);
+ 	if (changepw) {

@@ -1,0 +1,5 @@
+#!/bin/sh
+mount -n -t proc proc /proc
+mount -n -t sysfs sysfs /sys
+mount -n -t tmpfs -o mode=0711 mdev /dev
+/sbin/mdev -s

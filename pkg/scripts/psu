@@ -1,0 +1,5 @@
+#!/bin/sh
+_USER="${1}"
+[ -z "${_USER}" ] && _USER="${USER}"
+shift
+ps "${@}" | fgrep \ "${_USER}"\ \  | fgrep -v grep

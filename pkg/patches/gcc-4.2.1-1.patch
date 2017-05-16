@@ -1,0 +1,696 @@
+--- gcc-4.2.1.o/gcc/Makefile.in
++++ gcc-4.2.1/gcc/Makefile.in
+@@ -598,7 +598,7 @@
+ 
+ # List of extra object files that should be compiled for this target machine.
+ # The rules for compiling them should be in the t-* file for the machine.
+-EXTRA_PARTS = @extra_parts@
++EXTRA_PARTS =
+ 
+ # List of extra object files that should be compiled and linked with
+ # compiler proper (cc1, cc1obj, cc1plus).
+@@ -1450,7 +1450,7 @@
+ 	D128PBIT='$(D128PBIT)' \
+ 	D128PBIT_FUNCS='$(D128PBIT_FUNCS)' \
+ 	MULTILIBS=`$(GCC_FOR_TARGET) --print-multi-lib` \
+-	EXTRA_MULTILIB_PARTS='$(EXTRA_MULTILIB_PARTS)' \
++	EXTRA_MULTILIB_PARTS='' \
+ 	SHLIB_LINK='$(SHLIB_LINK)' \
+ 	SHLIB_INSTALL='$(SHLIB_INSTALL)' \
+ 	SHLIB_EXT='$(SHLIB_EXT)' \
+@@ -1522,37 +1522,22 @@
+ # Compile two additional files that are linked with every program
+ # linked using GCC on systems using COFF or ELF, for the sake of C++
+ # constructors.
+-$(T)crtbegin.o: crtstuff.c $(GCC_PASSES) $(TCONFIG_H) auto-host.h \
+-  gbl-ctors.h stmp-int-hdrs tsystem.h coretypes.h $(TM_H)
+-	$(GCC_FOR_TARGET) $(CRTSTUFF_CFLAGS) $(CRTSTUFF_T_CFLAGS) \
+-	  -c $(srcdir)/crtstuff.c -DCRT_BEGIN \
+-	  -o $(T)crtbegin$(objext)
++$(T)crtbegin.o: crtstuff.c
++	@true
+ 
+-$(T)crtend.o: crtstuff.c $(GCC_PASSES) $(TCONFIG_H) auto-host.h \
+-  gbl-ctors.h stmp-int-hdrs tsystem.h coretypes.h $(TM_H)
+-	$(GCC_FOR_TARGET) $(CRTSTUFF_CFLAGS) $(CRTSTUFF_T_CFLAGS) \
+-	  -c $(srcdir)/crtstuff.c -DCRT_END \
+-	  -o $(T)crtend$(objext)
++$(T)crtend.o: crtstuff.c
++	@true
+ 
+ # These are versions of crtbegin and crtend for shared libraries.
+-$(T)crtbeginS.o: crtstuff.c $(GCC_PASSES) $(TCONFIG_H) auto-host.h \
+-  gbl-ctors.h stmp-int-hdrs tsystem.h coretypes.h $(TM_H)
+-	$(GCC_FOR_TARGET) $(CRTSTUFF_CFLAGS) $(CRTSTUFF_T_CFLAGS_S) \
+-	  -c $(srcdir)/crtstuff.c -DCRT_BEGIN -DCRTSTUFFS_O \
+-	  -o $(T)crtbeginS$(objext)
++$(T)crtbeginS.o: crtstuff.c
++	@true
+ 
+-$(T)crtendS.o: crtstuff.c $(GCC_PASSES) $(TCONFIG_H) auto-host.h \
+-  gbl-ctors.h stmp-int-hdrs tsystem.h coretypes.h $(TM_H)
+-	$(GCC_FOR_TARGET) $(CRTSTUFF_CFLAGS) $(CRTSTUFF_T_CFLAGS_S) \
+-	  -c $(srcdir)/crtstuff.c -DCRT_END -DCRTSTUFFS_O \
+-	  -o $(T)crtendS$(objext)
++$(T)crtendS.o: crtstuff.c
++	@true
+ 
+ # This is a version of crtbegin for -static links.
+-$(T)crtbeginT.o: crtstuff.c $(GCC_PASSES) $(TCONFIG_H) auto-host.h \
+-  gbl-ctors.h stmp-int-hdrs tsystem.h coretypes.h $(TM_H)
+-	$(GCC_FOR_TARGET) $(CRTSTUFF_CFLAGS) $(CRTSTUFF_T_CFLAGS) \
+-	  -c $(srcdir)/crtstuff.c -DCRT_BEGIN -DCRTSTUFFT_O \
+-	  -o $(T)crtbeginT$(objext)
++$(T)crtbeginT.o: crtstuff.c
++	@true
+ 
+ # Compile the start modules crt0.o and mcrt0.o that are linked with
+ # every program
+--- gcc-4.2.1.o/gcc/c-lex.c
++++ gcc-4.2.1/gcc/c-lex.c
+@@ -178,18 +178,6 @@
+ 	  unsigned int ARG_UNUSED (line),
+ 	  const cpp_string * ARG_UNUSED (str))
+ {
+-#ifdef ASM_OUTPUT_IDENT
+-  if (!flag_no_ident)
+-    {
+-      /* Convert escapes in the string.  */
+-      cpp_string cstr = { 0, 0 };
+-      if (cpp_interpret_string (pfile, str, 1, &cstr, false))
+-	{
+-	  ASM_OUTPUT_IDENT (asm_out_file, (const char *) cstr.text);
+-	  free ((void *) cstr.text);
+-	}
+-    }
+-#endif
+ }
+ 
+ /* Called at the start of every non-empty line.  TOKEN is the first
+--- gcc-4.2.1.o/gcc/config.gcc
++++ gcc-4.2.1/gcc/config.gcc
+@@ -459,14 +459,14 @@
+   ;;
+ *-*-linux* | frv-*-*linux* | *-*-kfreebsd*-gnu | *-*-knetbsd*-gnu)
+   # Must come before *-*-gnu* (because of *-*-linux-gnu* systems).
+-  extra_parts="crtbegin.o crtbeginS.o crtbeginT.o crtend.o crtendS.o"
++  extra_parts=""
+   extra_options="${extra_options} linux.opt"
+   gas=yes
+   gnu_ld=yes
+   case ${enable_threads} in
+     "" | yes | posix) thread_file='posix' ;;
+   esac
+-  tmake_file="t-slibgcc-elf-ver t-linux"
++  tmake_file="t-linux"
+   case ${target} in
+     *-*-*uclibc*)
+       tm_defines="${tm_defines} UCLIBC_DEFAULT=1"
+@@ -489,7 +489,7 @@
+   gnu_ld=yes
+   # These details are the same as for Linux.
+   # But here we need a little extra magic.
+-  tmake_file="t-slibgcc-elf-ver t-linux t-gnu"
++  tmake_file="t-linux t-gnu"
+   case ${target} in
+     alpha*)
+       tm_file="${cpu_type}/${cpu_type}.h alpha/elf.h alpha/linux.h alpha/linux-elf.h gnu.h ${tm_file}"
+@@ -827,7 +827,7 @@
+ cris-*-linux*)
+ 	tm_file="dbxelf.h elfos.h svr4.h ${tm_file} linux.h cris/linux.h"
+ 	# We need to avoid using t-linux, so override default tmake_file
+-	tmake_file="cris/t-cris t-slibgcc-elf-ver cris/t-linux"
++	tmake_file="cris/t-cris cris/t-linux"
+ 	extra_options="${extra_options} cris/linux.opt"
+ 	;;
+ crx-*-elf)
+@@ -1369,7 +1369,7 @@
+ 		tmake_file="${tmake_file} t-libunwind-elf ia64/t-glibc-libunwind"
+ 	fi
+ 	target_cpu_default="MASK_GNU_AS|MASK_GNU_LD"
+-	extra_parts="crtbegin.o crtend.o crtbeginS.o crtendS.o crtfastmath.o"
++	extra_parts=""
+ 	;;
+ ia64*-*-hpux*)
+ 	tm_file="${tm_file} dbxelf.h elfos.h svr4.h ia64/sysv4.h ia64/hpux.h"
+@@ -1408,7 +1408,7 @@
+ m32r-*-linux*)
+ 	tm_file="dbxelf.h elfos.h svr4.h linux.h ${tm_file} m32r/linux.h"
+ 	# We override the tmake_file for linux -- why?
+-	tmake_file="t-slibgcc-elf-ver m32r/t-linux"
++	tmake_file="m32r/t-linux"
+ 	gnu_ld=yes
+ 	use_fixproto=yes
+ 	if test x$enable_threads = xyes; then
+@@ -1418,7 +1418,7 @@
+ m32rle-*-linux*)
+ 	tm_file="dbxelf.h elfos.h svr4.h linux.h m32r/little.h ${tm_file} m32r/linux.h"
+ 	# We override the tmake_file for linux -- why?
+-	tmake_file="t-slibgcc-elf-ver m32r/t-linux"
++	tmake_file="m32r/t-linux"
+ 	gnu_ld=yes
+ 	use_fixproto=yes
+ 	if test x$enable_threads = xyes; then
+@@ -1701,7 +1701,7 @@
+ powerpc64-*-gnu*)
+ 	tm_file="${cpu_type}/${cpu_type}.h elfos.h svr4.h freebsd-spec.h gnu.h rs6000/sysv4.h rs6000/linux64.h rs6000/gnu.h"
+ 	extra_options="${extra_options} rs6000/sysv4.opt rs6000/linux64.opt"
+-	tmake_file="rs6000/t-fprules t-slibgcc-elf-ver t-gnu rs6000/t-linux64 rs6000/t-fprules-softfp soft-fp/t-softfp"
++	tmake_file="rs6000/t-fprules t-gnu rs6000/t-linux64 rs6000/t-fprules-softfp soft-fp/t-softfp"
+ 	;;
+ powerpc-*-beos*)
+ 	tm_file="${tm_file} rs6000/aix.h rs6000/beos.h rs6000/xcoff.h"
+@@ -1822,14 +1822,14 @@
+ powerpc-*-gnu-gnualtivec*)
+ 	tm_file="${cpu_type}/${cpu_type}.h elfos.h svr4.h freebsd-spec.h gnu.h rs6000/sysv4.h rs6000/linux.h rs6000/linuxaltivec.h rs6000/gnu.h"
+ 	extra_options="${extra_options} rs6000/sysv4.opt"
+-	tmake_file="rs6000/t-fprules rs6000/t-fprules-fpbit rs6000/t-ppcos t-slibgcc-elf-ver t-gnu rs6000/t-ppccomm"
++	tmake_file="rs6000/t-fprules rs6000/t-fprules-fpbit rs6000/t-ppcos t-gnu rs6000/t-ppccomm"
+ 	if test x$enable_threads = xyes; then
+ 		thread_file='posix'
+ 	fi
+ 	;;
+ powerpc-*-gnu*)
+ 	tm_file="${cpu_type}/${cpu_type}.h elfos.h svr4.h freebsd-spec.h gnu.h rs6000/sysv4.h rs6000/linux.h rs6000/gnu.h"
+-	tmake_file="rs6000/t-fprules rs6000/t-fprules-fpbit rs6000/t-ppcos t-slibgcc-elf-ver t-gnu rs6000/t-ppccomm"
++	tmake_file="rs6000/t-fprules rs6000/t-fprules-fpbit rs6000/t-ppcos t-gnu rs6000/t-ppccomm"
+ 	extra_options="${extra_options} rs6000/sysv4.opt"
+ 	if test x$enable_threads = xyes; then
+ 		thread_file='posix'
+@@ -2442,7 +2442,7 @@
+ 	tm_file="mn10300/mn10300.h dbxelf.h elfos.h linux.h mn10300/linux.h"
+ 	tmake_file="${tmake_file} mn10300/t-linux"
+ 	gas=yes gnu_ld=yes
+-	extra_parts="crtbegin.o crtend.o crtbeginS.o crtendS.o"
++	extra_parts=""
+ 	use_collect2=no
+ 	;;
+ m32c-*-elf*)
+--- gcc-4.2.1.o/gcc/config/arm/t-arm-elf
++++ gcc-4.2.1/gcc/config/arm/t-arm-elf
+@@ -56,7 +56,7 @@
+ # MULTILIB_MATCHES    += mcpu?arm7=mcpu?arm610
+ # MULTILIB_MATCHES    += mcpu?arm7=mcpu?arm620
+ 
+-EXTRA_MULTILIB_PARTS = crtbegin.o crtend.o crti.o crtn.o
++EXTRA_MULTILIB_PARTS =
+ 
+ # If EXTRA_MULTILIB_PARTS is not defined above then define EXTRA_PARTS here
+ # EXTRA_PARTS = crtbegin.o crtend.o crti.o crtn.o
+--- gcc-4.2.1.o/gcc/config/arm/t-linux-eabi
++++ gcc-4.2.1/gcc/config/arm/t-linux-eabi
+@@ -11,4 +11,4 @@
+ 
+ # Multilib the standard Linux files.  Don't include crti.o or crtn.o,
+ # which are provided by glibc.
+-EXTRA_MULTILIB_PARTS=crtbegin.o crtend.o crtbeginS.o crtendS.o crtbeginT.o
++EXTRA_MULTILIB_PARTS=
+--- gcc-4.2.1.o/gcc/config/elfos.h
++++ gcc-4.2.1/gcc/config/elfos.h
+@@ -80,10 +80,9 @@
+ 
+ /* Output #ident as a .ident.  */
+ 
+-#define ASM_OUTPUT_IDENT(FILE, NAME) \
+-  fprintf (FILE, "%s\"%s\"\n", IDENT_ASM_OP, NAME);
++#define ASM_OUTPUT_IDENT(FILE, NAME)
+ 
+-#define IDENT_ASM_OP "\t.ident\t"
++#define IDENT_ASM_OP
+ 
+ #undef  SET_ASM_OP
+ #define SET_ASM_OP	"\t.set\t"
+--- gcc-4.2.1.o/gcc/config/frv/linux.h
++++ gcc-4.2.1/gcc/config/frv/linux.h
+@@ -27,15 +27,6 @@
+ #define SUBTARGET_DRIVER_SELF_SPECS \
+   "%{!mno-fdpic:-mfdpic}",
+ 
+-#undef STARTFILE_SPEC
+-#define STARTFILE_SPEC \
+-  "%{!shared: %{pg|p|profile:gcrt1.o%s;pie:Scrt1.o%s;:crt1.o%s}} \
+-   crti.o%s %{static:crtbeginT.o%s;shared|pie:crtbeginS.o%s;:crtbegin.o%s}"
+-
+-#undef ENDFILE_SPEC
+-#define ENDFILE_SPEC \
+-  "%{shared|pie:crtendS.o%s;:crtend.o%s} crtn.o%s"
+-
+ #define GLIBC_DYNAMIC_LINKER "/lib/ld.so.1"
+ 
+ #undef LINK_SPEC
+--- gcc-4.2.1.o/gcc/config/i386/linux.h
++++ gcc-4.2.1/gcc/config/i386/linux.h
+@@ -117,12 +117,6 @@
+ 	%{!dynamic-linker:-dynamic-linker %(dynamic_linker)}} \
+ 	%{static:-static}}}"
+ 
+-/* Similar to standard Linux, but adding -ffast-math support.  */
+-#undef  ENDFILE_SPEC
+-#define ENDFILE_SPEC \
+-  "%{ffast-math|funsafe-math-optimizations:crtfastmath.o%s} \
+-   %{shared|pie:crtendS.o%s;:crtend.o%s} crtn.o%s"
+-
+ /* A C statement (sans semicolon) to output to the stdio stream
+    FILE the assembler definition of uninitialized global DECL named
+    NAME whose size is SIZE bytes and alignment is ALIGN bytes.
+--- gcc-4.2.1.o/gcc/config/i386/linux64.h
++++ gcc-4.2.1/gcc/config/i386/linux64.h
+@@ -62,12 +62,6 @@
+       %{!m32:%{!dynamic-linker:-dynamic-linker " LINUX_DYNAMIC_LINKER64 "}}} \
+     %{static:-static}}"
+ 
+-/* Similar to standard Linux, but adding -ffast-math support.  */
+-#undef  ENDFILE_SPEC
+-#define ENDFILE_SPEC \
+-  "%{ffast-math|funsafe-math-optimizations:crtfastmath.o%s} \
+-   %{shared|pie:crtendS.o%s;:crtend.o%s} crtn.o%s"
+-
+ #define MULTILIB_DEFAULTS { "m64" }
+ 
+ #undef NEED_INDICATE_EXEC_STACK
+--- gcc-4.2.1.o/gcc/config/i386/t-i386elf
++++ gcc-4.2.1/gcc/config/i386/t-i386elf
+@@ -1,4 +1,4 @@
+ # For svr4 we build crtbegin.o and crtend.o which serve to add begin and
+ # end labels to the .ctors and .dtors section when we link using gcc.
+ 
+-EXTRA_PARTS=crtbegin.o crtend.o
++EXTRA_PARTS=
+--- gcc-4.2.1.o/gcc/config/i386/t-linux64
++++ gcc-4.2.1/gcc/config/i386/t-linux64
+@@ -1,8 +1,7 @@
+ # On x86-64 we do not need any exports for glibc for 64-bit libgcc_s,
+ # override the settings
+ # from t-slibgcc-elf-ver and t-linux
+-SHLIB_MAPFILES = $(srcdir)/libgcc-std.ver \
+-		 $(srcdir)/config/i386/libgcc-x86_64-glibc.ver
++SHLIB_MAPFILES =
+ 
+ MULTILIB_OPTIONS = m64/m32
+ MULTILIB_DIRNAMES = 64 32 
+@@ -11,8 +10,7 @@
+ LIBGCC = stmp-multilib
+ INSTALL_LIBGCC = install-multilib
+ 
+-EXTRA_MULTILIB_PARTS=crtbegin.o crtend.o crtbeginS.o crtendS.o \
+-		     crtbeginT.o crtfastmath.o
++EXTRA_MULTILIB_PARTS=
+ 
+ # The pushl in CTOR initialization interferes with frame pointer elimination.
+ # crtend*.o cannot be compiled without -fno-asynchronous-unwind-tables,
+--- gcc-4.2.1.o/gcc/config/ia64/linux.h
++++ gcc-4.2.1/gcc/config/ia64/linux.h
+@@ -16,24 +16,6 @@
+ 	builtin_define("_LONGLONG");		\
+ } while (0)
+ 
+-/* Need to override linux.h STARTFILE_SPEC, since it has crtbeginT.o in.  */
+-#undef STARTFILE_SPEC
+-#ifdef HAVE_LD_PIE
+-#define STARTFILE_SPEC \
+-  "%{!shared: %{pg|p|profile:gcrt1.o%s;pie:Scrt1.o%s;:crt1.o%s}}\
+-   crti.o%s %{shared|pie:crtbeginS.o%s;:crtbegin.o%s}"
+-#else
+-#define STARTFILE_SPEC \
+-  "%{!shared: %{pg|p|profile:gcrt1.o%s;:crt1.o%s}}\
+-   crti.o%s %{shared|pie:crtbeginS.o%s;:crtbegin.o%s}"
+-#endif
+-
+-/* Similar to standard Linux, but adding -ffast-math support.  */
+-#undef  ENDFILE_SPEC
+-#define ENDFILE_SPEC \
+-  "%{ffast-math|funsafe-math-optimizations:crtfastmath.o%s} \
+-   %{shared|pie:crtendS.o%s;:crtend.o%s} crtn.o%s"
+-
+ /* Define this for shared library support because it isn't in the main
+    linux.h file.  */
+ 
+--- gcc-4.2.1.o/gcc/config/linux.h
++++ gcc-4.2.1/gcc/config/linux.h
+@@ -33,31 +33,20 @@
+ #undef MD_EXEC_PREFIX
+ #undef MD_STARTFILE_PREFIX
+ 
+-/* Provide a STARTFILE_SPEC appropriate for GNU/Linux.  Here we add
+-   the GNU/Linux magical crtbegin.o file (see crtstuff.c) which
+-   provides part of the support for getting C++ file-scope static
+-   object constructed before entering `main'.  */
+-   
+ #undef	STARTFILE_SPEC
+ #if defined HAVE_LD_PIE
+ #define STARTFILE_SPEC \
+   "%{!shared: %{pg|p|profile:gcrt1.o%s;pie:Scrt1.o%s;:crt1.o%s}} \
+-   crti.o%s %{static:crtbeginT.o%s;shared|pie:crtbeginS.o%s;:crtbegin.o%s}"
++   crti.o%s"
+ #else
+ #define STARTFILE_SPEC \
+   "%{!shared: %{pg|p|profile:gcrt1.o%s;:crt1.o%s}} \
+-   crti.o%s %{static:crtbeginT.o%s;shared|pie:crtbeginS.o%s;:crtbegin.o%s}"
++   crti.o%s"
+ #endif
+ 
+-/* Provide a ENDFILE_SPEC appropriate for GNU/Linux.  Here we tack on
+-   the GNU/Linux magical crtend.o file (see crtstuff.c) which
+-   provides part of the support for getting C++ file-scope static
+-   object constructed before entering `main', followed by a normal
+-   GNU/Linux "finalizer" file, `crtn.o'.  */
+-
+ #undef	ENDFILE_SPEC
+ #define ENDFILE_SPEC \
+-  "%{shared|pie:crtendS.o%s;:crtend.o%s} crtn.o%s"
++  "crtn.o%s"
+ 
+ /* This is for -profile to use -lc_p instead of -lc.  */
+ #ifndef CC1_SPEC
+--- gcc-4.2.1.o/gcc/config/m32r/linux.h
++++ gcc-4.2.1/gcc/config/m32r/linux.h
+@@ -86,22 +86,6 @@
+     %{!shared: %{mieee-fp:-lieee} %{pthread:-lpthread} \
+     %{profile:-lc_p} %{!profile: -lc}}"
+ 
+-#undef  STARTFILE_SPEC
+-#if defined HAVE_LD_PIE
+-#define STARTFILE_SPEC \
+-  "%{!shared: %{pg|p|profile:gcrt1.o%s;pie:Scrt1.o%s;:crt1.o%s}} \
+-   crti.o%s %{static:crtbeginT.o%s;shared|pie:crtbeginS.o%s;:crtbegin.o%s}"
+-#else
+-#define STARTFILE_SPEC \
+-  "%{!shared: \
+-     %{pg:gcrt1.o%s} %{!pg:%{p:gcrt1.o%s} %{!p:crt1.o%s}}}\
+-   crti.o%s %{!shared:crtbegin.o%s} %{shared:crtbeginS.o%s}"
+-#endif
+-
+-#undef  ENDFILE_SPEC
+-#define ENDFILE_SPEC \
+-  "%{shared|pie:crtendS.o%s;:crtend.o%s} crtn.o%s"
+-
+ #undef  SUBTARGET_CPP_SPEC
+ #define SUBTARGET_CPP_SPEC "\
+    %{posix:-D_POSIX_SOURCE} \
+--- gcc-4.2.1.o/gcc/config/mips/t-linux64
++++ gcc-4.2.1/gcc/config/mips/t-linux64
+@@ -2,7 +2,7 @@
+ MULTILIB_DIRNAMES = n32 32 64
+ MULTILIB_OSDIRNAMES = ../lib32 ../lib ../lib64
+ 
+-EXTRA_MULTILIB_PARTS=crtbegin.o crtend.o crtbeginS.o crtendS.o crtbeginT.o
++EXTRA_MULTILIB_PARTS=
+ 
+ TPBIT = tp-bit.c
+ 
+--- gcc-4.2.1.o/gcc/config/rs6000/sysv4.h
++++ gcc-4.2.1/gcc/config/rs6000/sysv4.h
+@@ -777,21 +777,8 @@
+ 
+ /* Override svr4.h definition.  */
+ #undef	ENDFILE_SPEC
+-#define	ENDFILE_SPEC "\
+-%{mads         : crtsavres.o%s        %(endfile_ads)         ; \
+-  myellowknife : crtsavres.o%s        %(endfile_yellowknife) ; \
+-  mmvme        : crtsavres.o%s        %(endfile_mvme)        ; \
+-  msim         : crtsavres.o%s        %(endfile_sim)         ; \
+-  mwindiss     :                      %(endfile_windiss)     ; \
+-  mcall-freebsd: crtsavres.o%s        %(endfile_freebsd)     ; \
+-  mcall-linux  : crtsavres.o%s        %(endfile_linux)       ; \
+-  mcall-gnu    : crtsavres.o%s        %(endfile_gnu)         ; \
+-  mcall-netbsd : crtsavres.o%s        %(endfile_netbsd)      ; \
+-  mcall-openbsd: crtsavres.o%s        %(endfile_openbsd)     ; \
+-               : %(crtsavres_default) %(endfile_default)     }"
++#define	ENDFILE_SPEC ""
+ 
+-#define CRTSAVRES_DEFAULT_SPEC "crtsavres.o%s"
+-
+ #define	ENDFILE_DEFAULT_SPEC ""
+ 
+ /* Motorola ADS support.  */
+@@ -877,17 +864,14 @@
+ #ifdef HAVE_LD_PIE
+ #define	STARTFILE_LINUX_SPEC "\
+ %{!shared: %{pg|p|profile:gcrt1.o%s;pie:Scrt1.o%s;:crt1.o%s}} \
+-%{mnewlib:ecrti.o%s;:crti.o%s} \
+-%{static:crtbeginT.o%s;shared|pie:crtbeginS.o%s;:crtbegin.o%s}"
++%{mnewlib:ecrti.o%s;:crti.o%s}"
+ #else
+ #define	STARTFILE_LINUX_SPEC "\
+ %{!shared: %{pg|p|profile:gcrt1.o%s;:crt1.o%s}} \
+-%{mnewlib:ecrti.o%s;:crti.o%s} \
+-%{static:crtbeginT.o%s;shared|pie:crtbeginS.o%s;:crtbegin.o%s}"
++%{mnewlib:ecrti.o%s;:crti.o%s}"
+ #endif
+ 
+ #define	ENDFILE_LINUX_SPEC "\
+-%{shared|pie:crtendS.o%s;:crtend.o%s} \
+ %{mnewlib:ecrtn.o%s;:crtn.o%s}"
+ 
+ #define LINK_START_LINUX_SPEC ""
+@@ -925,10 +909,9 @@
+ #define	STARTFILE_GNU_SPEC "\
+ %{!shared: %{!static: %{pg:gcrt1.o%s} %{!pg:%{p:gcrt1.o%s} %{!p:crt1.o%s}}}} \
+ %{static: %{pg:gcrt0.o%s} %{!pg:%{p:gcrt0.o%s} %{!p:crt0.o%s}}} \
+-%{mnewlib: ecrti.o%s} %{!mnewlib: crti.o%s} \
+-%{!shared:crtbegin.o%s} %{shared:crtbeginS.o%s}"
++%{mnewlib: ecrti.o%s} %{!mnewlib: crti.o%s}"
+ 
+-#define	ENDFILE_GNU_SPEC "%{!shared:crtend.o%s} %{shared:crtendS.o%s} \
++#define	ENDFILE_GNU_SPEC "\
+ %{mnewlib: ecrtn.o%s} %{!mnewlib: crtn.o%s}"
+ 
+ #define LINK_START_GNU_SPEC ""
+@@ -1016,7 +999,6 @@
+ /* Override rs6000.h definition.  */
+ #undef	SUBTARGET_EXTRA_SPECS
+ #define	SUBTARGET_EXTRA_SPECS						\
+-  { "crtsavres_default",	CRTSAVRES_DEFAULT_SPEC },		\
+   { "lib_ads",			LIB_ADS_SPEC },				\
+   { "lib_yellowknife",		LIB_YELLOWKNIFE_SPEC },			\
+   { "lib_mvme",			LIB_MVME_SPEC },			\
+--- gcc-4.2.1.o/gcc/config/rs6000/t-ppccomm
++++ gcc-4.2.1/gcc/config/rs6000/t-ppccomm
+@@ -23,12 +23,6 @@
+ MULTILIB_MATCHES_ENDIAN	= mlittle=mlittle-endian mbig=mbig-endian
+ MULTILIB_MATCHES_SYSV	= mcall-sysv=mcall-sysv-eabi mcall-sysv=mcall-sysv-noeabi mcall-sysv=mcall-linux mcall-sysv=mcall-netbsd
+ 
+-EXTRA_MULTILIB_PARTS = crtbegin$(objext) crtend$(objext) \
+-  crtbeginS$(objext) crtendS$(objext) crtbeginT$(objext) \
+-  ecrti$(objext) ecrtn$(objext) \
+-  ncrti$(objext) ncrtn$(objext) \
+-  crtsavres$(objext)
+-
+ # We build {e,n}crti.o and {e,n}crtn.o, which serve to add begin and
+ # end labels to all of the special sections used when we link using gcc.
+ 
+--- gcc-4.2.1.o/gcc/config/s390/t-linux
++++ gcc-4.2.1/gcc/config/s390/t-linux
+@@ -1,3 +0,0 @@
+-# Override t-slibgcc-elf-ver to export some libgcc symbols with
+-# the symbol versions that glibc used.
+-SHLIB_MAPFILES = $(srcdir)/libgcc-std.ver $(srcdir)/config/s390/libgcc-glibc.ver
+--- gcc-4.2.1.o/gcc/config/s390/t-linux64
++++ gcc-4.2.1/gcc/config/s390/t-linux64
+@@ -5,4 +5,4 @@
+ LIBGCC = stmp-multilib
+ INSTALL_LIBGCC = install-multilib
+ 
+-EXTRA_MULTILIB_PARTS=crtbegin.o crtend.o crtbeginS.o crtendS.o crtbeginT.o
++EXTRA_MULTILIB_PARTS=
+--- gcc-4.2.1.o/gcc/config/sh/t-linux
++++ gcc-4.2.1/gcc/config/sh/t-linux
+@@ -7,22 +7,12 @@
+ MULTILIB_MATCHES = 
+ MULTILIB_EXCEPTIONS=
+ 
+-EXTRA_MULTILIB_PARTS= crtbegin.o crtend.o crtbeginS.o crtendS.o crtbeginT.o
++EXTRA_MULTILIB_PARTS=
+ 
+-# Override t-slibgcc-elf-ver to export some libgcc symbols with
+-# the symbol versions that glibc used, and hide some lib1func
+-# routines which should not be called via PLT.  We have to create
+-# the list from scratch.
+-SHLIB_MAPFILES = \
+-	$(srcdir)/libgcc-std.ver \
+-	$(srcdir)/config/sh/libgcc-excl.ver \
+-	$(srcdir)/config/sh/libgcc-glibc.ver
+-
+ # Override SHLIB_LINK and SHLIB_INSTALL to use linker script
+ # libgcc_s.so.
+ SHLIB_LINK = $(GCC_FOR_TARGET) $(LIBGCC2_CFLAGS) -shared -nodefaultlibs \
+ 	-Wl,--soname=$(SHLIB_SONAME) \
+-	-Wl,--version-script=$(SHLIB_MAP) \
+ 	-o $(SHLIB_DIR)/$(SHLIB_SONAME).tmp @multilib_flags@ \
+ 	$(SHLIB_OBJS) $(SHLIB_LC) && \
+ 	rm -f $(SHLIB_DIR)/$(SHLIB_SOLINK) && \
+--- gcc-4.2.1.o/gcc/config/sh/t-linux64
++++ gcc-4.2.1/gcc/config/sh/t-linux64
+@@ -1 +1 @@
+-EXTRA_MULTILIB_PARTS= crtbegin.o crtend.o crtbeginS.o crtendS.o crtbeginT.o
++EXTRA_MULTILIB_PARTS=
+--- gcc-4.2.1.o/gcc/config/sparc/linux.h
++++ gcc-4.2.1/gcc/config/sparc/linux.h
+@@ -40,33 +40,6 @@
+ #undef MD_EXEC_PREFIX
+ #undef MD_STARTFILE_PREFIX
+ 
+-/* Provide a STARTFILE_SPEC appropriate for GNU/Linux.  Here we add
+-   the GNU/Linux magical crtbegin.o file (see crtstuff.c) which
+-   provides part of the support for getting C++ file-scope static
+-   object constructed before entering `main'.  */
+-   
+-#undef  STARTFILE_SPEC
+-#if defined HAVE_LD_PIE
+-#define STARTFILE_SPEC \
+-  "%{!shared: %{pg|p:gcrt1.o%s;pie:Scrt1.o%s;:crt1.o%s}}\
+-   crti.o%s %{static:crtbeginT.o%s;shared|pie:crtbeginS.o%s;:crtbegin.o%s}"
+-#else
+-#define STARTFILE_SPEC \
+-  "%{!shared: %{pg|p:gcrt1.o%s;:crt1.o%s}}\
+-   crti.o%s %{static:crtbeginT.o%s;shared|pie:crtbeginS.o%s;:crtbegin.o%s}"
+-#endif
+-
+-/* Provide a ENDFILE_SPEC appropriate for GNU/Linux.  Here we tack on
+-   the GNU/Linux magical crtend.o file (see crtstuff.c) which
+-   provides part of the support for getting C++ file-scope static
+-   object constructed before entering `main', followed by a normal
+-   GNU/Linux "finalizer" file, `crtn.o'.  */
+-
+-#undef  ENDFILE_SPEC
+-#define ENDFILE_SPEC \
+-  "%{ffast-math|funsafe-math-optimizations:crtfastmath.o%s} \
+-   %{shared|pie:crtendS.o%s;:crtend.o%s} crtn.o%s"
+-
+ /* This is for -profile to use -lc_p instead of -lc.  */
+ #undef	CC1_SPEC
+ #define	CC1_SPEC "%{profile:-p} \
+--- gcc-4.2.1.o/gcc/config/sparc/linux64.h
++++ gcc-4.2.1/gcc/config/sparc/linux64.h
+@@ -57,35 +57,6 @@
+ #undef ASM_CPU_DEFAULT_SPEC
+ #define ASM_CPU_DEFAULT_SPEC "-Av9a"
+ 
+-/* Provide a STARTFILE_SPEC appropriate for GNU/Linux.  Here we add
+-   the GNU/Linux magical crtbegin.o file (see crtstuff.c) which
+-   provides part of the support for getting C++ file-scope static
+-   object constructed before entering `main'.  */
+-   
+-#undef  STARTFILE_SPEC
+-
+-#ifdef HAVE_LD_PIE
+-#define STARTFILE_SPEC \
+-  "%{!shared:%{pg|p:gcrt1.o%s;pie:Scrt1.o%s;:crt1.o%s}}\
+-   crti.o%s %{static:crtbeginT.o%s;shared|pie:crtbeginS.o%s;:crtbeginS.o%s}"
+-#else
+-#define STARTFILE_SPEC \
+-  "%{!shared:%{pg|p:gcrt1.o%s;:crt1.o%s}}\
+-   crti.o%s %{static:crtbeginT.o%s;shared|pie:crtbeginS.o%s;:crtbeginS.o%s}"
+-#endif
+-
+-/* Provide a ENDFILE_SPEC appropriate for GNU/Linux.  Here we tack on
+-   the GNU/Linux magical crtend.o file (see crtstuff.c) which
+-   provides part of the support for getting C++ file-scope static
+-   object constructed before entering `main', followed by a normal
+-   GNU/Linux "finalizer" file, `crtn.o'.  */
+-
+-#undef  ENDFILE_SPEC
+-
+-#define ENDFILE_SPEC \
+-  "%{shared|pie:crtendS.o%s;:crtend.o%s} crtn.o%s\
+-   %{ffast-math|funsafe-math-optimizations:crtfastmath.o%s}"
+-
+ /* The GNU C++ standard library requires that these macros be defined.  */
+ #undef CPLUSPLUS_CPP_SPEC
+ #define CPLUSPLUS_CPP_SPEC "-D_GNU_SOURCE %(cpp)"
+--- gcc-4.2.1.o/gcc/config/sparc/t-linux
++++ gcc-4.2.1/gcc/config/sparc/t-linux
+@@ -1,5 +0,0 @@
+-# Override t-slibgcc-elf-ver to export some libgcc symbols with
+-# the symbol versions that glibc used.
+-# Avoid the t-linux version file.
+-SHLIB_MAPFILES = $(srcdir)/libgcc-std.ver \
+-		 $(srcdir)/config/sparc/libgcc-sparc-glibc.ver
+--- gcc-4.2.1.o/gcc/config/sparc/t-linux64
++++ gcc-4.2.1/gcc/config/sparc/t-linux64
+@@ -5,8 +5,7 @@
+ LIBGCC = stmp-multilib
+ INSTALL_LIBGCC = install-multilib
+ 
+-EXTRA_MULTILIB_PARTS=crtbegin.o crtend.o crtbeginS.o crtendS.o crtbeginT.o \
+-	crtfastmath.o
++EXTRA_MULTILIB_PARTS=
+ 
+ CRTSTUFF_T_CFLAGS = `if test x$$($(GCC_FOR_TARGET) $(MULTILIB_CFLAGS) \
+ 				 -print-multi-os-directory) \
+--- gcc-4.2.1.o/gcc/config/t-linux
++++ gcc-4.2.1/gcc/config/t-linux
+@@ -1,11 +1,5 @@
+-# Compile crtbeginS.o and crtendS.o with pic.
+-CRTSTUFF_T_CFLAGS_S = $(CRTSTUFF_T_CFLAGS) -fPIC
+ # Compile libgcc2.a with pic.
+ TARGET_LIBGCC2_CFLAGS = -fPIC
+-
+-# Override t-slibgcc-elf-ver to export some libgcc symbols with
+-# the symbol versions that glibc used.
+-SHLIB_MAPFILES += $(srcdir)/config/libgcc-glibc.ver
+ 
+ # Use unwind-dw2-fde-glibc
+ LIB2ADDEH = $(srcdir)/unwind-dw2.c $(srcdir)/unwind-dw2-fde-glibc.c \
+--- gcc-4.2.1.o/gcc/config/t-slibgcc-elf-ver
++++ /dev/null
+@@ -1,36 +0,0 @@
+-# Build a shared libgcc library for ELF with symbol versioning
+-# with the GNU linker.
+-
+-SHLIB_EXT = .so
+-SHLIB_SOLINK = @shlib_base_name@.so
+-SHLIB_SOVERSION = 1
+-SHLIB_SONAME = @shlib_base_name@.so.$(SHLIB_SOVERSION)
+-SHLIB_MAP = @shlib_map_file@
+-SHLIB_OBJS = @shlib_objs@
+-SHLIB_DIR = @multilib_dir@
+-SHLIB_SLIBDIR_QUAL = @shlib_slibdir_qual@
+-SHLIB_LC = -lc
+-
+-SHLIB_LINK = $(GCC_FOR_TARGET) $(LIBGCC2_CFLAGS) -shared -nodefaultlibs \
+-	-Wl,--soname=$(SHLIB_SONAME) \
+-	-Wl,--version-script=$(SHLIB_MAP) \
+-	-o $(SHLIB_DIR)/$(SHLIB_SONAME).tmp @multilib_flags@ \
+-	$(SHLIB_OBJS) $(SHLIB_LC) && \
+-	rm -f $(SHLIB_DIR)/$(SHLIB_SOLINK) && \
+-	if [ -f $(SHLIB_DIR)/$(SHLIB_SONAME) ]; then \
+-	  mv -f $(SHLIB_DIR)/$(SHLIB_SONAME) \
+-		$(SHLIB_DIR)/$(SHLIB_SONAME).backup; \
+-	else true; fi && \
+-	mv $(SHLIB_DIR)/$(SHLIB_SONAME).tmp $(SHLIB_DIR)/$(SHLIB_SONAME) && \
+-	$(LN_S) $(SHLIB_SONAME) $(SHLIB_DIR)/$(SHLIB_SOLINK)
+-# $(slibdir) double quoted to protect it from expansion while building
+-# libgcc.mk.  We want this delayed until actual install time.
+-SHLIB_INSTALL = \
+-	$$(mkinstalldirs) $$(DESTDIR)$$(slibdir)$(SHLIB_SLIBDIR_QUAL); \
+-	$(INSTALL_DATA) $(SHLIB_DIR)/$(SHLIB_SONAME) \
+-	  $$(DESTDIR)$$(slibdir)$(SHLIB_SLIBDIR_QUAL)/$(SHLIB_SONAME); \
+-	rm -f $$(DESTDIR)$$(slibdir)$(SHLIB_SLIBDIR_QUAL)/$(SHLIB_SOLINK); \
+-	$(LN_S) $(SHLIB_SONAME) \
+-	  $$(DESTDIR)$$(slibdir)$(SHLIB_SLIBDIR_QUAL)/$(SHLIB_SOLINK)
+-SHLIB_MKMAP = $(srcdir)/mkmap-symver.awk
+-SHLIB_MAPFILES = $(srcdir)/libgcc-std.ver
+--- gcc-4.2.1.o/gcc/config/xtensa/t-linux
++++ gcc-4.2.1/gcc/config/xtensa/t-linux
+@@ -1 +1 @@
+-EXTRA_MULTILIB_PARTS = crtbegin.o crtend.o crtbeginS.o crtendS.o crtbeginT.o
++EXTRA_MULTILIB_PARTS =
+--- gcc-4.2.1.o/gcc/toplev.c
++++ gcc-4.2.1/gcc/toplev.c
+@@ -1083,15 +1083,6 @@
+      expander can also generate them.  */
+   process_pending_assemble_externals ();
+ 
+-  /* Attach a special .ident directive to the end of the file to identify
+-     the version of GCC which compiled this code.  The format of the .ident
+-     string is patterned after the ones produced by native SVR4 compilers.  */
+-#ifdef IDENT_ASM_OP
+-  if (!flag_no_ident)
+-    fprintf (asm_out_file, "%s\"GCC: (GNU) %s\"\n",
+-	     IDENT_ASM_OP, version_string);
+-#endif
+-
+   /* This must be at the end.  Some target ports emit end of file directives
+      into the assembly file here, and hence we can not output anything to the
+      assembly file after this point.  */

@@ -1,0 +1,133 @@
+From b23681dddb8987571f04d46fc14f0ba012a7929c Mon Sep 17 00:00:00 2001
+From: Guus Sliepen <guus@tinc-vpn.org>
+Date: Sun, 25 Mar 2012 22:54:36 +0100
+Subject: [PATCH] Support :: in IPv6 Subnets.
+
+---
+ doc/tinc.conf.5.in |    3 +-
+ doc/tinc.texi      |    3 +-
+ src/subnet.c       |   72 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 74 insertions(+), 4 deletions(-)
+
+diff --git a/doc/tinc.conf.5.in b/doc/tinc.conf.5.in
+index 8034418..f6b0da4 100644
+--- a/doc/tinc.conf.5.in
++++ b/doc/tinc.conf.5.in
+@@ -564,12 +564,11 @@ variables can be specified.
+ Subnets can either be single MAC, IPv4 or IPv6 addresses,
+ in which case a subnet consisting of only that single address is assumed,
+ or they can be a IPv4 or IPv6 network address with a prefixlength.
+-Shorthand notations are not supported.
+ For example, IPv4 subnets must be in a form like 192.168.1.0/24,
+ where 192.168.1.0 is the network address and 24 is the number of bits set in the netmask.
+ Note that subnets like 192.168.1.1/24 are invalid!
+ Read a networking HOWTO/FAQ/guide if you don't understand this.
+-IPv6 subnets are notated like fec0:0:0:1:0:0:0:0/64.
++IPv6 subnets are notated like fec0:0:0:1::/64.
+ MAC addresses are notated like 0:1a:2b:3c:4d:5e.
+ 
+ .Pp
+diff --git a/doc/tinc.texi b/doc/tinc.texi
+index c8eea1f..d0fb70d 100644
+--- a/doc/tinc.texi
++++ b/doc/tinc.texi
+@@ -1162,12 +1162,11 @@ Multiple subnet lines can be specified for each daemon.
+ Subnets can either be single MAC, IPv4 or IPv6 addresses,
+ in which case a subnet consisting of only that single address is assumed,
+ or they can be a IPv4 or IPv6 network address with a prefixlength.
+-Shorthand notations are not supported.
+ For example, IPv4 subnets must be in a form like 192.168.1.0/24,
+ where 192.168.1.0 is the network address and 24 is the number of bits set in the netmask.
+ Note that subnets like 192.168.1.1/24 are invalid!
+ Read a networking HOWTO/FAQ/guide if you don't understand this.
+-IPv6 subnets are notated like fec0:0:0:1:0:0:0:0/64.
++IPv6 subnets are notated like fec0:0:0:1::/64.
+ MAC addresses are notated like 0:1a:2b:3c:4d:5e.
+ 
+ @cindex CIDR notation
+diff --git a/src/subnet.c b/src/subnet.c
+index 7fffe63..d7b9f47 100644
+--- a/src/subnet.c
++++ b/src/subnet.c
+@@ -268,6 +268,78 @@ bool str2net(subnet_t *subnet, const char *subnetstr) {
+ 		return true;
+ 	}
+ 
++	// IPv6 short form
++	if(strstr(subnetstr, "::")) {
++		const char *p;
++		char *q;
++		int colons = 0;
++
++		// Count number of colons
++		for(p = subnetstr; *p; p++)
++			if(*p == ':')
++				colons++;
++
++		if(colons > 7)
++			return false;
++
++		// Scan numbers before the double colon
++		p = subnetstr;
++		for(i = 0; i < colons; i++) {
++			if(*p == ':')
++				break;
++			x[i] = strtoul(p, &q, 0x10);
++			if(!q || p == q || *q != ':')
++				return false;
++			p = ++q;
++		}
++
++		p++;
++		colons -= i;
++		if(!i) {
++			p++;
++			colons--;
++		}
++
++		if(!*p || *p == '/' || *p == '#')
++			colons--;
++
++		// Fill in the blanks
++		for(; i < 8 - colons; i++)
++			x[i] = 0;
++
++		// Scan the remaining numbers
++		for(; i < 8; i++) {
++			x[i] = strtoul(p, &q, 0x10);
++			if(!q || p == q)
++				return false;
++			if(i == 7) {
++				p = q;
++				break;
++			}
++			if(*q != ':')
++				return false;
++			p = ++q;
++		}
++
++		l = 128;
++		if(*p == '/')
++			sscanf(p, "/%d#%d", &l, &weight);
++		else if(*p == '#')
++			sscanf(p, "#%d", &weight);
++
++		if(l < 0 || l > 128)
++			return false;
++
++		subnet->type = SUBNET_IPV6;
++		subnet->net.ipv6.prefixlength = l;
++		subnet->weight = weight;
++
++		for(i = 0; i < 8; i++)
++			subnet->net.ipv6.address.x[i] = htons(x[i]);
++
++		return true;
++	}
++
+ 	return false;
+ }
+ 
+-- 
+1.7.2.5
+

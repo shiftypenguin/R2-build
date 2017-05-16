@@ -1,0 +1,220 @@
+diff -Naur iproute2-2.6.38.o/configure iproute2-2.6.38/configure
+--- iproute2-2.6.38.o/configure	2011-03-18 00:05:47.000000000 +0700
++++ iproute2-2.6.38/configure	2012-06-03 18:06:16.569975123 +0800
+@@ -15,7 +15,7 @@
+ 	return 0;
+ }
+ EOF
+-gcc -I$INCLUDE -o /tmp/atmtest /tmp/atmtest.c -latm >/dev/null 2>&1 
++$CC -I$INCLUDE -o /tmp/atmtest /tmp/atmtest.c -latm >/dev/null 2>&1 
+ if [ $? -eq 0 ]
+ then
+     echo "TC_CONFIG_ATM:=y" >>Config
+@@ -49,7 +49,7 @@
+ 
+ EOF
+ 
+-if gcc -I$INCLUDE $IPTC -o /tmp/ipttest /tmp/ipttest.c $IPTL -ldl -lxtables >/dev/null 2>&1
++if $CC -I$INCLUDE $IPTC -o /tmp/ipttest /tmp/ipttest.c $IPTL -ldl -lxtables >/dev/null 2>&1
+ then
+ 	echo "TC_CONFIG_XT:=y" >>Config
+ 	echo "using xtables"
+@@ -86,7 +86,7 @@
+ }
+ 
+ EOF
+-gcc -I$INCLUDE $IPTC -o /tmp/ipttest /tmp/ipttest.c $IPTL -ldl >/dev/null 2>&1
++$CC -I$INCLUDE $IPTC -o /tmp/ipttest /tmp/ipttest.c $IPTL -ldl >/dev/null 2>&1
+ 
+ if [ $? -eq 0 ]
+ then
+@@ -126,7 +126,7 @@
+ }
+ 
+ EOF
+-gcc -I$INCLUDE $IPTC -o /tmp/ipttest /tmp/ipttest.c $IPTL -ldl >/dev/null 2>&1
++$CC -I$INCLUDE $IPTC -o /tmp/ipttest /tmp/ipttest.c $IPTL -ldl >/dev/null 2>&1
+ 
+ if [ $? -eq 0 ]
+ then
+diff -Naur iproute2-2.6.38.o/include/libnetlink.h iproute2-2.6.38/include/libnetlink.h
+--- iproute2-2.6.38.o/include/libnetlink.h	2011-03-18 00:05:47.000000000 +0700
++++ iproute2-2.6.38/include/libnetlink.h	2012-06-03 18:06:16.570975123 +0800
+@@ -7,6 +7,7 @@
+ #include <linux/if_link.h>
+ #include <linux/if_addr.h>
+ #include <linux/neighbour.h>
++#include <stdio.h>
+ 
+ struct rtnl_handle
+ {
+diff -Naur iproute2-2.6.38.o/include/linux/netfilter_ipv4/ip_tables.h iproute2-2.6.38/include/linux/netfilter_ipv4/ip_tables.h
+--- iproute2-2.6.38.o/include/linux/netfilter_ipv4/ip_tables.h	2011-03-18 00:05:47.000000000 +0700
++++ iproute2-2.6.38/include/linux/netfilter_ipv4/ip_tables.h	2012-06-03 18:06:16.570975123 +0800
+@@ -16,6 +16,7 @@
+ #define _IPTABLES_H
+ 
+ #include <linux/types.h>
++#include <sys/types.h>
+ 
+ #include <linux/netfilter_ipv4.h>
+ 
+diff -Naur iproute2-2.6.38.o/include/linux/netlink.h iproute2-2.6.38/include/linux/netlink.h
+--- iproute2-2.6.38.o/include/linux/netlink.h	2011-03-18 00:05:47.000000000 +0700
++++ iproute2-2.6.38/include/linux/netlink.h	2012-06-03 18:06:16.570975123 +0800
+@@ -2,6 +2,7 @@
+ #define __LINUX_NETLINK_H
+ 
+ #include <linux/socket.h> /* for sa_family_t */
++#include <sys/socket.h>   /* for sa_family_t */
+ #include <linux/types.h>
+ 
+ #define NETLINK_ROUTE		0	/* Routing/device hook				*/
+diff -Naur iproute2-2.6.38.o/include/netinet/tcp.h iproute2-2.6.38/include/netinet/tcp.h
+--- iproute2-2.6.38.o/include/netinet/tcp.h	2011-03-18 00:05:47.000000000 +0700
++++ iproute2-2.6.38/include/netinet/tcp.h	2012-06-03 18:06:16.570975123 +0800
+@@ -32,8 +32,6 @@
+ #ifndef _NETINET_TCP_H
+ #define _NETINET_TCP_H	1
+ 
+-#include <features.h>
+-
+ /*
+  * User-settable options (used with setsockopt).
+  */
+diff -Naur iproute2-2.6.38.o/include/utils.h iproute2-2.6.38/include/utils.h
+--- iproute2-2.6.38.o/include/utils.h	2011-03-18 00:05:47.000000000 +0700
++++ iproute2-2.6.38/include/utils.h	2012-06-03 18:06:16.570975123 +0800
+@@ -4,6 +4,10 @@
+ #include <asm/types.h>
+ #include <resolv.h>
+ #include <stdlib.h>
++#include <limits.h>
++#include <sys/types.h>
++#include <sys/socket.h>
++#include <sys/param.h>
+ 
+ #include "libnetlink.h"
+ #include "ll_map.h"
+diff -Naur iproute2-2.6.38.o/ip/ipaddress.c iproute2-2.6.38/ip/ipaddress.c
+--- iproute2-2.6.38.o/ip/ipaddress.c	2011-03-18 00:05:47.000000000 +0700
++++ iproute2-2.6.38/ip/ipaddress.c	2012-06-03 18:06:16.571975123 +0800
+@@ -18,7 +18,7 @@
+ #include <sys/ioctl.h>
+ #include <sys/socket.h>
+ #include <sys/ioctl.h>
+-#include <sys/errno.h>
++#include <errno.h>
+ #include <netinet/in.h>
+ #include <arpa/inet.h>
+ #include <string.h>
+diff -Naur iproute2-2.6.38.o/Makefile iproute2-2.6.38/Makefile
+--- iproute2-2.6.38.o/Makefile	2011-03-18 00:05:47.000000000 +0700
++++ iproute2-2.6.38/Makefile	2012-06-03 18:06:16.571975123 +0800
+@@ -29,7 +29,7 @@
+ 
+ CC = gcc
+ HOSTCC = gcc
+-CCOPTS = -D_GNU_SOURCE -O2 -Wstrict-prototypes -Wall
++CCOPTS = -D_GNU_SOURCE -O2 -Wstrict-prototypes -Wall -DHZ=100
+ CFLAGS = $(CCOPTS) -I../include $(DEFINES)
+ YACCFLAGS = -d -t -v
+ 
+diff -Naur iproute2-2.6.38.o/misc/Makefile iproute2-2.6.38/misc/Makefile
+--- iproute2-2.6.38.o/misc/Makefile	2011-03-18 00:05:47.000000000 +0700
++++ iproute2-2.6.38/misc/Makefile	2012-06-03 18:06:16.571975123 +0800
+@@ -1,7 +1,7 @@
+ SSOBJ=ss.o ssfilter.o
+ LNSTATOBJ=lnstat.o lnstat_util.o
+ 
+-TARGETS=ss nstat ifstat rtacct arpd lnstat
++TARGETS=ss nstat ifstat rtacct
+ 
+ include ../Config
+ 
+diff -Naur iproute2-2.6.38.o/misc/ss.c iproute2-2.6.38/misc/ss.c
+--- iproute2-2.6.38.o/misc/ss.c	2011-03-18 00:05:47.000000000 +0700
++++ iproute2-2.6.38/misc/ss.c	2012-06-03 18:09:38.120975123 +0800
+@@ -36,6 +36,70 @@
+ #include <netinet/tcp.h>
+ #include <linux/inet_diag.h>
+ 
++// Don't know why it wan't take this from local tcp.h
++enum
++{
++  TCP_ESTABLISHED = 1,
++  TCP_SYN_SENT,
++  TCP_SYN_RECV,
++  TCP_FIN_WAIT1,
++  TCP_FIN_WAIT2,
++  TCP_TIME_WAIT,
++  TCP_CLOSE,
++  TCP_CLOSE_WAIT,
++  TCP_LAST_ACK,
++  TCP_LISTEN,
++  TCP_CLOSING   /* now a valid state */
++};
++
++# define TCPI_OPT_TIMESTAMPS	1
++# define TCPI_OPT_SACK		2
++# define TCPI_OPT_WSCALE	4
++# define TCPI_OPT_ECN		8
++
++struct tcp_info
++{
++  u_int8_t	tcpi_state;
++  u_int8_t	tcpi_ca_state;
++  u_int8_t	tcpi_retransmits;
++  u_int8_t	tcpi_probes;
++  u_int8_t	tcpi_backoff;
++  u_int8_t	tcpi_options;
++  u_int8_t	tcpi_snd_wscale : 4, tcpi_rcv_wscale : 4;
++
++  u_int32_t	tcpi_rto;
++  u_int32_t	tcpi_ato;
++  u_int32_t	tcpi_snd_mss;
++  u_int32_t	tcpi_rcv_mss;
++
++  u_int32_t	tcpi_unacked;
++  u_int32_t	tcpi_sacked;
++  u_int32_t	tcpi_lost;
++  u_int32_t	tcpi_retrans;
++  u_int32_t	tcpi_fackets;
++
++  /* Times. */
++  u_int32_t	tcpi_last_data_sent;
++  u_int32_t	tcpi_last_ack_sent;	/* Not remembered, sorry.  */
++  u_int32_t	tcpi_last_data_recv;
++  u_int32_t	tcpi_last_ack_recv;
++
++  /* Metrics. */
++  u_int32_t	tcpi_pmtu;
++  u_int32_t	tcpi_rcv_ssthresh;
++  u_int32_t	tcpi_rtt;
++  u_int32_t	tcpi_rttvar;
++  u_int32_t	tcpi_snd_ssthresh;
++  u_int32_t	tcpi_snd_cwnd;
++  u_int32_t	tcpi_advmss;
++  u_int32_t	tcpi_reordering;
++  u_int32_t	tcpi_rcv_rtt;
++  u_int32_t	tcpi_rcv_space;
++  u_int32_t	tcpi_total_retrans;
++
++};
++
++
+ int resolve_hosts = 0;
+ int resolve_services = 1;
+ int preferred_family = AF_UNSPEC;
+diff -Naur iproute2-2.6.38.o/tc/Makefile iproute2-2.6.38/tc/Makefile
+--- iproute2-2.6.38.o/tc/Makefile	2011-03-18 00:05:47.000000000 +0700
++++ iproute2-2.6.38/tc/Makefile	2012-06-03 18:06:16.571975123 +0800
+@@ -59,7 +59,7 @@
+ 	CFLAGS += -DTC_CONFIG_XT_H
+ 	TCSO += m_xt_old.so
+     else
+-      TCMODULES += m_ipt.o
++      TCMODULES +=
+     endif
+   endif
+ endif

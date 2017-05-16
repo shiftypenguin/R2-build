@@ -1,0 +1,19 @@
+--- e2fsprogs-1.41.14.o/misc/mke2fs.c
++++ e2fsprogs-1.41.14/misc/mke2fs.c
+@@ -20,6 +20,7 @@
+ 
+ #include <stdio.h>
+ #include <string.h>
++#include <stdint.h>
+ #include <strings.h>
+ #include <fcntl.h>
+ #include <ctype.h>
+@@ -2021,7 +2022,7 @@
+ 	int ret;
+ 	int blocksize;
+ 	__u64 blocks;
+-	__uint64_t range[2];
++	uint64_t range[2];
+ 
+ 	blocks = fs->super->s_blocks_count;
+ 	blocksize = EXT2_BLOCK_SIZE(fs->super);

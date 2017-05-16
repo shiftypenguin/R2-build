@@ -1,0 +1,210 @@
+diff -Naur linux-3.2.32.o/fs/proc/base.c linux-3.2.32/fs/proc/base.c
+--- linux-3.2.32.o/fs/proc/base.c	2012-10-17 02:50:15.000000000 +0000
++++ linux-3.2.32/fs/proc/base.c	2013-03-12 07:02:04.052000069 +0000
+@@ -1428,6 +1428,30 @@
+ 
+ #endif /* CONFIG_SCHED_AUTOGROUP */
+ 
++#ifdef CONFIG_SECURITY_PROC_RESTRICT
++static int current_has_group(gid_t target)
++{
++	if (!current_uid() || !current_euid()) return 1;
++	return groups_search(current->cred->group_info, target);
++}
++
++struct getdents_callback {
++	struct linux_dirent __user *current_dir;
++	struct linux_dirent __user *previous;
++	int count;
++	int error;
++};
++
++static int our_error_filldir(void *__buf, const char *name, int namlen, loff_t offset,
++			     u64 ino, unsigned int d_type)
++{
++	struct getdents_callback *buf = (struct getdents_callback *)__buf;
++
++	buf->error = -EINVAL;
++	return 0;
++}
++#endif
++
+ static ssize_t comm_write(struct file *file, const char __user *buf,
+ 				size_t count, loff_t *offset)
+ {
+@@ -1624,7 +1648,11 @@
+ 		rcu_read_lock();
+ 		cred = __task_cred(task);
+ 		inode->i_uid = cred->euid;
++#ifdef CONFIG_SECURITY_PROC_RESTRICT
++		inode->i_gid = CONFIG_SECURITY_PROC_TRUSTED_GID;
++#else
+ 		inode->i_gid = cred->egid;
++#endif
+ 		rcu_read_unlock();
+ 	}
+ 	security_task_to_inode(task, inode);
+@@ -1651,14 +1679,36 @@
+ 	task = pid_task(proc_pid(inode), PIDTYPE_PID);
+ 	if (task) {
+ 		if ((inode->i_mode == (S_IFDIR|S_IRUGO|S_IXUGO)) ||
++#ifdef CONFIG_SECURITY_PROC_RESTRICT
++		    (inode->i_mode == (S_IFDIR|S_IRUSR|S_IXUSR|S_IRGRP|S_IXGRP)) ||
++#endif
+ 		    task_dumpable(task)) {
+ 			cred = __task_cred(task);
++#ifdef CONFIG_SECURITY_PROC_RESTRICT
++			if (current_has_group(CONFIG_SECURITY_PROC_TRUSTED_GID)
++			|| current_euid() == cred->euid) {
++				stat->uid = cred->euid;
++				stat->gid = CONFIG_SECURITY_PROC_TRUSTED_GID;
++			}
++			else {
++				stat->uid = 0;
++				stat->gid = 0;
++				goto _enoent;
++			}
++#else
+ 			stat->uid = cred->euid;
+ 			stat->gid = cred->egid;
++#endif
+ 		}
+ 	}
+ 	rcu_read_unlock();
+ 	return 0;
++
++#ifdef CONFIG_SECURITY_PROC_RESTRICT
++_enoent:
++	rcu_read_unlock();
++	return -ENOENT;
++#endif
+ }
+ 
+ /* dentry stuff */
+@@ -1683,6 +1733,7 @@
+ 	struct inode *inode;
+ 	struct task_struct *task;
+ 	const struct cred *cred;
++	int ret = 1;
+ 
+ 	if (nd && nd->flags & LOOKUP_RCU)
+ 		return -ECHILD;
+@@ -1692,11 +1743,27 @@
+ 
+ 	if (task) {
+ 		if ((inode->i_mode == (S_IFDIR|S_IRUGO|S_IXUGO)) ||
++#ifdef CONFIG_SECURITY_PROC_RESTRICT
++		    (inode->i_mode == (S_IFDIR|S_IRUSR|S_IXUSR|S_IRGRP|S_IXGRP)) ||
++#endif
+ 		    task_dumpable(task)) {
+ 			rcu_read_lock();
+ 			cred = __task_cred(task);
++#ifdef CONFIG_SECURITY_PROC_RESTRICT
++			if (current_has_group(CONFIG_SECURITY_PROC_TRUSTED_GID)
++			|| current_euid() == cred->euid) {
++				inode->i_uid = cred->euid;
++				inode->i_gid = CONFIG_SECURITY_PROC_TRUSTED_GID;
++			}
++			else {
++				inode->i_uid = 0;
++				inode->i_gid = 0;
++				ret = -ENOENT;
++			}
++#else
+ 			inode->i_uid = cred->euid;
+ 			inode->i_gid = cred->egid;
++#endif
+ 			rcu_read_unlock();
+ 		} else {
+ 			inode->i_uid = 0;
+@@ -1705,7 +1772,7 @@
+ 		inode->i_mode &= ~(S_ISUID | S_ISGID);
+ 		security_task_to_inode(task, inode);
+ 		put_task_struct(task);
+-		return 1;
++		return ret;
+ 	}
+ 	d_drop(dentry);
+ 	return 0;
+@@ -2895,7 +2962,11 @@
+ 	if (!inode)
+ 		goto out;
+ 
++#ifdef CONFIG_SECURITY_PROC_RESTRICT
++	inode->i_mode = S_IFDIR|S_IRUSR|S_IXUSR|S_IRGRP|S_IXGRP;
++#else
+ 	inode->i_mode = S_IFDIR|S_IRUGO|S_IXUGO;
++#endif
+ 	inode->i_op = &proc_tgid_base_inode_operations;
+ 	inode->i_fop = &proc_tgid_base_operations;
+ 	inode->i_flags|=S_IMMUTABLE;
+@@ -3004,6 +3075,10 @@
+ 	struct task_struct *reaper;
+ 	struct tgid_iter iter;
+ 	struct pid_namespace *ns;
++	filldir_t __fdir = filldir;
++#ifdef CONFIG_SECURITY_PROC_RESTRICT
++	const struct cred *cred;
++#endif
+ 
+ 	if (filp->f_pos >= PID_MAX_LIMIT + TGID_OFFSET)
+ 		goto out_no_task;
+@@ -3025,8 +3100,18 @@
+ 	for (iter = next_tgid(ns, iter);
+ 	     iter.task;
+ 	     iter.tgid += 1, iter = next_tgid(ns, iter)) {
++#ifdef CONFIG_SECURITY_PROC_RESTRICT
++		rcu_read_lock();
++		cred = __task_cred(iter.task);
++		if (current_has_group(CONFIG_SECURITY_PROC_TRUSTED_GID)
++		|| current_euid() == cred->euid)
++			__fdir = filldir;
++		else
++			__fdir = &our_error_filldir;
++		rcu_read_unlock();
++#endif
+ 		filp->f_pos = iter.tgid + TGID_OFFSET;
+-		if (proc_pid_fill_cache(filp, dirent, filldir, iter) < 0) {
++		if (proc_pid_fill_cache(filp, dirent, __fdir, iter) < 0) {
+ 			put_task_struct(iter.task);
+ 			goto out;
+ 		}
+@@ -3147,7 +3232,11 @@
+ 
+ 	if (!inode)
+ 		goto out;
++#ifdef CONFIG_SECURITY_PROC_RESTRICT
++	inode->i_mode = S_IFDIR|S_IRUSR|S_IXUSR|S_IRGRP|S_IXGRP;
++#else
+ 	inode->i_mode = S_IFDIR|S_IRUGO|S_IXUGO;
++#endif
+ 	inode->i_op = &proc_tid_base_inode_operations;
+ 	inode->i_fop = &proc_tid_base_operations;
+ 	inode->i_flags|=S_IMMUTABLE;
+diff -Naur linux-3.2.32.o/security/Kconfig linux-3.2.32/security/Kconfig
+--- linux-3.2.32.o/security/Kconfig	2012-10-17 02:50:15.000000000 +0000
++++ linux-3.2.32/security/Kconfig	2013-03-12 07:08:14.079000077 +0000
+@@ -84,6 +84,23 @@
+ 
+ 	  If you are unsure how to answer this question, answer N.
+ 
++config SECURITY_PROC_RESTRICT
++	bool "Restrict unprivileged access to process list"
++	default n
++	help
++	  This enforces restrictions on unprivileged users listing processes
++	  running on system with tools like ps or top
++
++	  If additional option selected to grant full process list rights to
++	  group, a gid of that group can be specified
++
++config SECURITY_PROC_TRUSTED_GID
++	int "Privileged group allowed to see full process list"
++	depends on SECURITY_PROC_RESTRICT
++	default 0
++	help
++	  Privileged group that allowed to do full process listing with ps or top
++
+ config SECURITY
+ 	bool "Enable different security models"
+ 	depends on SYSFS

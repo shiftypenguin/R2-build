@@ -1,0 +1,20 @@
+--- etc.o/init/boot
++++ etc/init/boot
+@@ -74,16 +74,7 @@
+ 		fi
+ 	fi
+ 
+-echo -n "rootrw: "
+-	null mount -n -o remount,rw /
+-	if [ "${?}" -gt 0 ]; then
+-	echo "Cannot mount root for reading and writing."
+-	read RETURN
+-	shutdown -r
+-	exit 0
+-	fi
+-	rm -f /fastboot /forcefsck
+-	> /etc/mtab
++echo -n "mountfs: "
+ 	mount -f /
+ 	null mount -a -O no_netdev
+ 	swapon -a

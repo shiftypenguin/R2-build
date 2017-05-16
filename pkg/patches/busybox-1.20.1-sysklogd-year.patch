@@ -1,0 +1,14 @@
+--- busybox-1.20.1.o/sysklogd/syslogd.c
++++ busybox-1.20.1/sysklogd/syslogd.c
+@@ -653,9 +653,9 @@
+ 	} else {
+ 		now = 0;
+ 		timestamp = msg;
+-		msg += 16;
++		msg += 21; /* For Y10K generations: change this to 22 and next one to 21! */
+ 	}
+-	timestamp[15] = '\0';
++	timestamp[20] = '\0';
+ 
+ 	if (option_mask32 & OPT_small)
+ 		sprintf(G.printbuf, "%s %s\n", timestamp, msg);

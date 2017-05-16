@@ -1,0 +1,379 @@
+--- gcc-4.2.1.o/gcc/config/alpha/linux-elf.h
++++ gcc-4.2.1/gcc/config/alpha/linux-elf.h
+@@ -28,7 +28,7 @@
+ #define SUBTARGET_EXTRA_SPECS \
+ { "elf_dynamic_linker", ELF_DYNAMIC_LINKER },
+ 
+-#define GLIBC_DYNAMIC_LINKER	"/lib/ld-linux.so.2"
++#define GLIBC_DYNAMIC_LINKER	"/lib/sldl"
+ #define UCLIBC_DYNAMIC_LINKER "/lib/ld-uClibc.so.0"
+ #if UCLIBC_DEFAULT
+ #define CHOOSE_DYNAMIC_LINKER(G, U) "%{mglibc:%{muclibc:%e-mglibc and -muclibc used together}" G ";:" U "}"
+--- gcc-4.2.1.o/gcc/config/arm/linux-elf.h
++++ gcc-4.2.1/gcc/config/arm/linux-elf.h
+@@ -51,7 +51,7 @@
+ 
+ #define LIBGCC_SPEC "%{msoft-float:-lfloat} %{mfloat-abi=soft*:-lfloat} -lgcc"
+ 
+-#define GLIBC_DYNAMIC_LINKER "/lib/ld-linux.so.2"
++#define GLIBC_DYNAMIC_LINKER "/lib/sldl"
+ 
+ #define LINUX_TARGET_LINK_SPEC  "%{h*} %{version:-v} \
+    %{b} \
+--- gcc-4.2.1.o/gcc/config/i386/linux.h
++++ gcc-4.2.1/gcc/config/i386/linux.h
+@@ -101,7 +101,7 @@
+ 
+ /* These macros may be overridden in k*bsd-gnu.h and i386/k*bsd-gnu.h. */
+ #define LINK_EMULATION "elf_i386"
+-#define GLIBC_DYNAMIC_LINKER "/lib/ld-linux.so.2"
++#define GLIBC_DYNAMIC_LINKER "/lib/sldl"
+ 
+ #undef  SUBTARGET_EXTRA_SPECS
+ #define SUBTARGET_EXTRA_SPECS \
+--- gcc-4.2.1.o/gcc/config/i386/linux64.h
++++ gcc-4.2.1/gcc/config/i386/linux64.h
+@@ -49,8 +49,8 @@
+    When the -shared link option is used a final link is not being
+    done.  */
+ 
+-#define GLIBC_DYNAMIC_LINKER32 "/lib/ld-linux.so.2"
+-#define GLIBC_DYNAMIC_LINKER64 "/lib64/ld-linux-x86-64.so.2"
++#define GLIBC_DYNAMIC_LINKER32 "/lib32/sldl"
++#define GLIBC_DYNAMIC_LINKER64 "/lib/sldl"
+ 
+ #undef	LINK_SPEC
+ #define LINK_SPEC "%{!m32:-m elf_x86_64} %{m32:-m elf_i386} \
+--- gcc-4.2.1.o/gcc/config/i386/t-linux64
++++ gcc-4.2.1/gcc/config/i386/t-linux64
+@@ -6,7 +6,7 @@
+ 
+ MULTILIB_OPTIONS = m64/m32
+ MULTILIB_DIRNAMES = 64 32 
+-MULTILIB_OSDIRNAMES = ../lib64 ../lib
++MULTILIB_OSDIRNAMES = ../lib ../lib32
+ 
+ LIBGCC = stmp-multilib
+ INSTALL_LIBGCC = install-multilib
+--- gcc-4.2.1.o/gcc/config/ia64/linux.h
++++ gcc-4.2.1/gcc/config/ia64/linux.h
+@@ -37,7 +37,7 @@
+ /* Define this for shared library support because it isn't in the main
+    linux.h file.  */
+ 
+-#define GLIBC_DYNAMIC_LINKER "/lib/ld-linux-ia64.so.2"
++#define GLIBC_DYNAMIC_LINKER "/lib/sldl"
+ 
+ #undef LINK_SPEC
+ #define LINK_SPEC "\
+--- gcc-4.2.1.o/gcc/config/linux.h
++++ gcc-4.2.1/gcc/config/linux.h
+@@ -99,15 +99,6 @@
+ #define USE_LD_AS_NEEDED 1
+ #endif
+ 
+-/* Determine which dynamic linker to use depending on whether GLIBC or
+-   uClibc is the default C library and whether -muclibc or -mglibc has
+-   been passed to change the default.  */
+-#if UCLIBC_DEFAULT
+-#define CHOOSE_DYNAMIC_LINKER(G, U) "%{mglibc:%{muclibc:%e-mglibc and -muclibc used together}" G ";:" U "}"
+-#else
+-#define CHOOSE_DYNAMIC_LINKER(G, U) "%{muclibc:%{mglibc:%e-mglibc and -muclibc used together}" U ";:" G "}"
+-#endif
+-
+ /* For most targets the following definitions suffice;
+    GLIBC_DYNAMIC_LINKER must be defined for each target using them, or
+    GLIBC_DYNAMIC_LINKER32 and GLIBC_DYNAMIC_LINKER64 for targets
+@@ -115,12 +106,9 @@
+ #define UCLIBC_DYNAMIC_LINKER "/lib/ld-uClibc.so.0"
+ #define UCLIBC_DYNAMIC_LINKER32 "/lib/ld-uClibc.so.0"
+ #define UCLIBC_DYNAMIC_LINKER64 "/lib/ld64-uClibc.so.0"
+-#define LINUX_DYNAMIC_LINKER \
+-  CHOOSE_DYNAMIC_LINKER (GLIBC_DYNAMIC_LINKER, UCLIBC_DYNAMIC_LINKER)
+-#define LINUX_DYNAMIC_LINKER32 \
+-  CHOOSE_DYNAMIC_LINKER (GLIBC_DYNAMIC_LINKER32, UCLIBC_DYNAMIC_LINKER32)
+-#define LINUX_DYNAMIC_LINKER64 \
+-  CHOOSE_DYNAMIC_LINKER (GLIBC_DYNAMIC_LINKER64, UCLIBC_DYNAMIC_LINKER64)
++#define LINUX_DYNAMIC_LINKER "/lib/sldl"
++#define LINUX_DYNAMIC_LINKER32 "/lib32/sldl"
++#define LINUX_DYNAMIC_LINKER64 "/lib/sldl"
+ 
+ /* Determine whether the entire c99 runtime
+    is present in the runtime library.  */
+--- gcc-4.2.1.o/gcc/config/m32r/linux.h
++++ gcc-4.2.1/gcc/config/m32r/linux.h
+@@ -59,7 +59,7 @@
+ 
+ /* If ELF is the default format, we should not use /lib/elf.  */
+ 
+-#define GLIBC_DYNAMIC_LINKER "/lib/ld-linux.so.2"
++#define GLIBC_DYNAMIC_LINKER "/lib/sldl"
+ 
+ #undef	LINK_SPEC
+ #if TARGET_LITTLE_ENDIAN
+--- gcc-4.2.1.o/gcc/config/m68k/linux.h
++++ gcc-4.2.1/gcc/config/m68k/linux.h
+@@ -123,7 +123,7 @@
+ 
+ /* If ELF is the default format, we should not use /lib/elf.  */
+ 
+-#define GLIBC_DYNAMIC_LINKER "/lib/ld.so.1"
++#define GLIBC_DYNAMIC_LINKER "/lib/sldl"
+ 
+ #undef	LINK_SPEC
+ #define LINK_SPEC "-m m68kelf %{shared} \
+--- gcc-4.2.1.o/gcc/config/mips/linux.h
++++ gcc-4.2.1/gcc/config/mips/linux.h
+@@ -104,7 +104,7 @@
+ #undef MIPS_DEFAULT_GVALUE
+ #define MIPS_DEFAULT_GVALUE 0
+ 
+-#define GLIBC_DYNAMIC_LINKER "/lib/ld.so.1"
++#define GLIBC_DYNAMIC_LINKER "/lib/sldl"
+ 
+ /* Borrowed from sparc/linux.h */
+ #undef LINK_SPEC
+--- gcc-4.2.1.o/gcc/config/mips/linux64.h
++++ gcc-4.2.1/gcc/config/mips/linux64.h
+@@ -36,12 +36,11 @@
+ %{!shared: %{pthread:-lpthread} \
+   %{profile:-lc_p} %{!profile: -lc}}"
+ 
+-#define GLIBC_DYNAMIC_LINKER32 "/lib/ld.so.1"
+-#define GLIBC_DYNAMIC_LINKER64 "/lib64/ld.so.1"
+-#define GLIBC_DYNAMIC_LINKERN32 "/lib32/ld.so.1"
++#define GLIBC_DYNAMIC_LINKER32 "/lib32/sldl"
++#define GLIBC_DYNAMIC_LINKER64 "/lib/sldl"
++#define GLIBC_DYNAMIC_LINKERN32 "/libn32/sldl"
+ #define UCLIBC_DYNAMIC_LINKERN32 "/lib32/ld-uClibc.so.0"
+-#define LINUX_DYNAMIC_LINKERN32 \
+-  CHOOSE_DYNAMIC_LINKER (GLIBC_DYNAMIC_LINKERN32, UCLIBC_DYNAMIC_LINKERN32)
++#define LINUX_DYNAMIC_LINKERN32 "/libn32/sldl"
+ 
+ #undef LINK_SPEC
+ #define LINK_SPEC "\
+--- gcc-4.2.1.o/gcc/config/mips/t-linux64
++++ gcc-4.2.1/gcc/config/mips/t-linux64
+@@ -1,6 +1,6 @@
+ MULTILIB_OPTIONS = mabi=n32/mabi=32/mabi=64
+ MULTILIB_DIRNAMES = n32 32 64
+-MULTILIB_OSDIRNAMES = ../lib32 ../lib ../lib64
++MULTILIB_OSDIRNAMES = ../libn32 ../lib32 ../lib
+ 
+ EXTRA_MULTILIB_PARTS=crtbegin.o crtend.o crtbeginS.o crtendS.o crtbeginT.o
+ 
+--- gcc-4.2.1.o/gcc/config/mn10300/linux.h
++++ gcc-4.2.1/gcc/config/mn10300/linux.h
+@@ -33,7 +33,7 @@
+ #undef  ASM_SPEC
+ #define ASM_SPEC "%{Wa,*:%*}"
+ 
+-#define GLIBC_DYNAMIC_LINKER "/lib/ld.so.1"
++#define GLIBC_DYNAMIC_LINKER "/lib/sldl"
+ 
+ #undef  LINK_SPEC
+ #define LINK_SPEC "%{mrelax:--relax} %{shared:-shared} \
+--- gcc-4.2.1.o/gcc/config/pa/pa-linux.h
++++ gcc-4.2.1/gcc/config/pa/pa-linux.h
+@@ -45,7 +45,7 @@
+ /* Define this for shared library support because it isn't in the main
+    linux.h file.  */
+ 
+-#define GLIBC_DYNAMIC_LINKER "/lib/ld.so.1"
++#define GLIBC_DYNAMIC_LINKER "/lib/sldl"
+ 
+ #undef LINK_SPEC
+ #define LINK_SPEC "\
+--- gcc-4.2.1.o/gcc/config/rs6000/linux64.h
++++ gcc-4.2.1/gcc/config/rs6000/linux64.h
+@@ -336,20 +336,12 @@
+ #undef	LINK_OS_DEFAULT_SPEC
+ #define LINK_OS_DEFAULT_SPEC "%(link_os_linux)"
+ 
+-#define GLIBC_DYNAMIC_LINKER32 "/lib/ld.so.1"
+-#define GLIBC_DYNAMIC_LINKER64 "/lib64/ld64.so.1"
++#define GLIBC_DYNAMIC_LINKER32 "/lib32/sldl"
++#define GLIBC_DYNAMIC_LINKER64 "/lib/sldl"
+ #define UCLIBC_DYNAMIC_LINKER32 "/lib/ld-uClibc.so.0"
+ #define UCLIBC_DYNAMIC_LINKER64 "/lib/ld64-uClibc.so.0"
+-#if UCLIBC_DEFAULT
+-#define CHOOSE_DYNAMIC_LINKER(G, U) "%{mglibc:%{muclibc:%e-mglibc and -muclibc used together}" G ";:" U "}"
+-#else
+-#define CHOOSE_DYNAMIC_LINKER(G, U) "%{muclibc:%{mglibc:%e-mglibc and -muclibc used together}" U ";:" G "}"
+-#endif
+-#define LINUX_DYNAMIC_LINKER32 \
+-  CHOOSE_DYNAMIC_LINKER (GLIBC_DYNAMIC_LINKER32, UCLIBC_DYNAMIC_LINKER32)
+-#define LINUX_DYNAMIC_LINKER64 \
+-  CHOOSE_DYNAMIC_LINKER (GLIBC_DYNAMIC_LINKER64, UCLIBC_DYNAMIC_LINKER64)
+-
++#define LINUX_DYNAMIC_LINKER32 "/lib32/sldl"
++#define LINUX_DYNAMIC_LINKER64 "/lib/sldl"
+ 
+ #define LINK_OS_LINUX_SPEC32 "-m elf32ppclinux %{!shared: %{!static: \
+   %{rdynamic:-export-dynamic} \
+--- gcc-4.2.1.o/gcc/config/rs6000/sysv4.h
++++ gcc-4.2.1/gcc/config/rs6000/sysv4.h
+@@ -892,7 +892,7 @@
+ 
+ #define LINK_START_LINUX_SPEC ""
+ 
+-#define GLIBC_DYNAMIC_LINKER "/lib/ld.so.1"
++#define GLIBC_DYNAMIC_LINKER "/lib/sldl"
+ #define UCLIBC_DYNAMIC_LINKER "/lib/ld-uClibc.so.0"
+ #if UCLIBC_DEFAULT
+ #define CHOOSE_DYNAMIC_LINKER(G, U) "%{mglibc:%{muclibc:%e-mglibc and -muclibc used together}" G ";:" U "}"
+@@ -935,7 +935,7 @@
+ 
+ #define LINK_OS_GNU_SPEC "-m elf32ppclinux %{!shared: %{!static: \
+   %{rdynamic:-export-dynamic} \
+-  %{!dynamic-linker:-dynamic-linker /lib/ld.so.1}}}"
++  %{!dynamic-linker:-dynamic-linker /lib/sldl}}}"
+ 
+ #define CPP_OS_GNU_SPEC "-D__unix__ -D__gnu_hurd__ -D__GNU__	\
+ %{!undef:					                \
+--- gcc-4.2.1.o/gcc/config/rs6000/t-linux64
++++ gcc-4.2.1/gcc/config/rs6000/t-linux64
+@@ -12,7 +12,7 @@
+ MULTILIB_EXTRA_OPTS     = fPIC mstrict-align
+ MULTILIB_EXCEPTIONS     = m64/msoft-float
+ MULTILIB_EXCLUSIONS     = m64/!m32/msoft-float
+-MULTILIB_OSDIRNAMES	= ../lib64 ../lib nof
++MULTILIB_OSDIRNAMES	= ../lib ../lib32 nof
+ MULTILIB_MATCHES        = $(MULTILIB_MATCHES_FLOAT)
+ 
+ softfp_wrap_start := '\#ifndef __powerpc64__'
+--- gcc-4.2.1.o/gcc/config/s390/linux.h
++++ gcc-4.2.1/gcc/config/s390/linux.h
+@@ -73,8 +73,8 @@
+ #define MULTILIB_DEFAULTS { "m31" }
+ #endif
+ 
+-#define GLIBC_DYNAMIC_LINKER32 "/lib/ld.so.1"
+-#define GLIBC_DYNAMIC_LINKER64 "/lib/ld64.so.1"
++#define GLIBC_DYNAMIC_LINKER32 "/lib32/sldl"
++#define GLIBC_DYNAMIC_LINKER64 "/lib/sldl"
+ 
+ #undef  LINK_SPEC
+ #define LINK_SPEC \
+--- gcc-4.2.1.o/gcc/config/s390/t-linux64
++++ gcc-4.2.1/gcc/config/s390/t-linux64
+@@ -1,6 +1,6 @@
+ MULTILIB_OPTIONS = m64/m31
+ MULTILIB_DIRNAMES = 64 32
+-MULTILIB_OSDIRNAMES = ../lib64 ../lib
++MULTILIB_OSDIRNAMES = ../lib ../lib32
+ 
+ LIBGCC = stmp-multilib
+ INSTALL_LIBGCC = install-multilib
+--- gcc-4.2.1.o/gcc/config/sh/linux.h
++++ gcc-4.2.1/gcc/config/sh/linux.h
+@@ -48,7 +48,7 @@
+ 
+ #define TARGET_ASM_FILE_END file_end_indicate_exec_stack
+ 
+-#define GLIBC_DYNAMIC_LINKER "/lib/ld-linux.so.2"
++#define GLIBC_DYNAMIC_LINKER "/lib/sldl"
+ 
+ #undef SUBTARGET_LINK_EMUL_SUFFIX
+ #define SUBTARGET_LINK_EMUL_SUFFIX "_linux"
+--- gcc-4.2.1.o/gcc/config/sparc/linux.h
++++ gcc-4.2.1/gcc/config/sparc/linux.h
+@@ -121,16 +121,9 @@
+ 
+ /* If ELF is the default format, we should not use /lib/elf.  */
+ 
+-#define GLIBC_DYNAMIC_LINKER "/lib/ld-linux.so.2"
++#define GLIBC_DYNAMIC_LINKER "/lib/sldl"
+ #define UCLIBC_DYNAMIC_LINKER "/lib/ld-uClibc.so.0"
+-#if UCLIBC_DEFAULT
+-#define CHOOSE_DYNAMIC_LINKER(G, U) "%{mglibc:%{muclibc:%e-mglibc and -muclibc used together}" G ";:" U "}"
+-#else
+-#define CHOOSE_DYNAMIC_LINKER(G, U) "%{muclibc:%{mglibc:%e-mglibc and -muclibc used together}" U ";:" G "}"
+-#endif
+-#define LINUX_DYNAMIC_LINKER \
+-  CHOOSE_DYNAMIC_LINKER (GLIBC_DYNAMIC_LINKER, UCLIBC_DYNAMIC_LINKER)
+-
++#define LINUX_DYNAMIC_LINKER "/lib/sldl"
+ 
+ #undef  LINK_SPEC
+ #define LINK_SPEC "-m elf32_sparc -Y P,/usr/lib %{shared:-shared} \
+--- gcc-4.2.1.o/gcc/config/sparc/linux64.h
++++ gcc-4.2.1/gcc/config/sparc/linux64.h
+@@ -144,19 +144,12 @@
+ 
+ /* If ELF is the default format, we should not use /lib/elf.  */
+ 
+-#define GLIBC_DYNAMIC_LINKER32 "/lib/ld-linux.so.2"
+-#define GLIBC_DYNAMIC_LINKER64 "/lib64/ld-linux.so.2"
++#define GLIBC_DYNAMIC_LINKER32 "/lib32/sldl"
++#define GLIBC_DYNAMIC_LINKER64 "/lib/sldl"
+ #define UCLIBC_DYNAMIC_LINKER32 "/lib/ld-uClibc.so.0"
+ #define UCLIBC_DYNAMIC_LINKER64 "/lib/ld64-uClibc.so.0"
+-#if UCLIBC_DEFAULT
+-#define CHOOSE_DYNAMIC_LINKER(G, U) "%{mglibc:%{muclibc:%e-mglibc and -muclibc used together}" G ";:" U "}"
+-#else
+-#define CHOOSE_DYNAMIC_LINKER(G, U) "%{muclibc:%{mglibc:%e-mglibc and -muclibc used together}" U ";:" G "}"
+-#endif
+-#define LINUX_DYNAMIC_LINKER32 \
+-  CHOOSE_DYNAMIC_LINKER (GLIBC_DYNAMIC_LINKER32, UCLIBC_DYNAMIC_LINKER32)
+-#define LINUX_DYNAMIC_LINKER64 \
+-  CHOOSE_DYNAMIC_LINKER (GLIBC_DYNAMIC_LINKER64, UCLIBC_DYNAMIC_LINKER64)
++#define LINUX_DYNAMIC_LINKER32 "/lib32/sldl"
++#define LINUX_DYNAMIC_LINKER64 "/lib/sldl"
+ 
+ #ifdef SPARC_BI_ARCH
+ 
+@@ -167,7 +160,7 @@
+   { "link_arch_default", LINK_ARCH_DEFAULT_SPEC },	  \
+   { "link_arch",	 LINK_ARCH_SPEC },
+ 
+-#define LINK_ARCH32_SPEC "-m elf32_sparc -Y P,/usr/lib %{shared:-shared} \
++#define LINK_ARCH32_SPEC "-m elf32_sparc -Y P,/usr/lib32 %{shared:-shared} \
+   %{!shared: \
+     %{!ibcs: \
+       %{!static: \
+@@ -176,7 +169,7 @@
+         %{static:-static}}} \
+ "
+ 
+-#define LINK_ARCH64_SPEC "-m elf64_sparc -Y P,/usr/lib64 %{shared:-shared} \
++#define LINK_ARCH64_SPEC "-m elf64_sparc -Y P,/usr/lib %{shared:-shared} \
+   %{!shared: \
+     %{!ibcs: \
+       %{!static: \
+@@ -257,7 +250,7 @@
+ #else /* !SPARC_BI_ARCH */
+ 
+ #undef LINK_SPEC
+-#define LINK_SPEC "-m elf64_sparc -Y P,/usr/lib64 %{shared:-shared} \
++#define LINK_SPEC "-m elf64_sparc -Y P,/usr/lib %{shared:-shared} \
+   %{!shared: \
+     %{!ibcs: \
+       %{!static: \
+--- gcc-4.2.1.o/gcc/config/sparc/t-linux64
++++ gcc-4.2.1/gcc/config/sparc/t-linux64
+@@ -1,6 +1,6 @@
+ MULTILIB_OPTIONS = m64/m32
+ MULTILIB_DIRNAMES = 64 32
+-MULTILIB_OSDIRNAMES = ../lib64 ../lib
++MULTILIB_OSDIRNAMES = ../lib ../lib32
+ 
+ LIBGCC = stmp-multilib
+ INSTALL_LIBGCC = install-multilib
+@@ -10,4 +10,4 @@
+ 
+ CRTSTUFF_T_CFLAGS = `if test x$$($(GCC_FOR_TARGET) $(MULTILIB_CFLAGS) \
+ 				 -print-multi-os-directory) \
+-			= x../lib64; then echo -mcmodel=medany; fi`
++			= x../lib; then echo -mcmodel=medany; fi`
+--- gcc-4.2.1.o/gcc/config/xtensa/linux.h
++++ gcc-4.2.1/gcc/config/xtensa/linux.h
+@@ -43,7 +43,7 @@
+   %{mlongcalls:--longcalls} \
+   %{mno-longcalls:--no-longcalls}"
+ 
+-#define GLIBC_DYNAMIC_LINKER "/lib/ld.so.1"
++#define GLIBC_DYNAMIC_LINKER "/lib/sldl"
+ 
+ #undef LINK_SPEC
+ #define LINK_SPEC \

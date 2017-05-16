@@ -1,0 +1,38 @@
+diff -Naur linux-3.2.32.o/fs/proc/generic.c linux-3.2.32/fs/proc/generic.c
+--- linux-3.2.32.o/fs/proc/generic.c	2012-10-17 02:50:15.000000000 +0000
++++ linux-3.2.32/fs/proc/generic.c	2013-03-13 09:56:56.234017982 +0000
+@@ -695,7 +695,7 @@
+ struct proc_dir_entry *proc_mkdir(const char *name,
+ 		struct proc_dir_entry *parent)
+ {
+-	return proc_mkdir_mode(name, S_IRUGO | S_IXUGO, parent);
++	return proc_mkdir_mode(name, S_IRUSR | S_IXUSR | S_IRGRP | S_IXGRP, parent);
+ }
+ EXPORT_SYMBOL(proc_mkdir);
+ 
+diff -Naur linux-3.2.32.o/fs/proc/proc_sysctl.c linux-3.2.32/fs/proc/proc_sysctl.c
+--- linux-3.2.32.o/fs/proc/proc_sysctl.c	2012-10-17 02:50:15.000000000 +0000
++++ linux-3.2.32/fs/proc/proc_sysctl.c	2013-03-13 09:58:40.561017907 +0000
+@@ -371,7 +371,9 @@
+ 
+ 	table = PROC_I(inode)->sysctl_entry;
+ 	if (!table) /* global root - r-xr-xr-x */
+-		error = mask & MAY_WRITE ? -EACCES : 0;
++		if (!current_uid() || !current_euid())
++			error = mask & MAY_WRITE ? -EACCES : 0;
++		else error = -EACCES;
+ 	else /* Use the permissions on the sysctl table entry */
+ 		error = sysctl_perm(head->root, table, mask & ~MAY_NOT_BLOCK);
+ 
+diff -Naur linux-3.2.32.o/fs/sysfs/mount.c linux-3.2.32/fs/sysfs/mount.c
+--- linux-3.2.32.o/fs/sysfs/mount.c	2012-10-17 02:50:15.000000000 +0000
++++ linux-3.2.32/fs/sysfs/mount.c	2013-03-13 09:59:31.562017901 +0000
+@@ -36,7 +36,7 @@
+ 	.s_name		= "",
+ 	.s_count	= ATOMIC_INIT(1),
+ 	.s_flags	= SYSFS_DIR | (KOBJ_NS_TYPE_NONE << SYSFS_NS_TYPE_SHIFT),
+-	.s_mode		= S_IFDIR | S_IRWXU | S_IRUGO | S_IXUGO,
++	.s_mode		= S_IFDIR | S_IRWXU | S_IRGRP | S_IXGRP,
+ 	.s_ino		= 1,
+ };
+ 

@@ -1,0 +1,362 @@
+This patch disables symbol versioning for vdso in linux kernel
+
+diff -Naur linux-3.2.12.o/arch/ia64/kernel/gate.lds.S linux-3.2.12/arch/ia64/kernel/gate.lds.S
+--- linux-3.2.12.o/arch/ia64/kernel/gate.lds.S	2012-03-20 00:03:17.000000000 +0800
++++ linux-3.2.12/arch/ia64/kernel/gate.lds.S	2012-06-13 01:33:53.797056481 +0800
+@@ -17,9 +17,6 @@
+ 	.gnu.hash		: { *(.gnu.hash) }
+ 	.dynsym			: { *(.dynsym) }
+ 	.dynstr			: { *(.dynstr) }
+-	.gnu.version		: { *(.gnu.version) }
+-	.gnu.version_d		: { *(.gnu.version_d) }
+-	.gnu.version_r		: { *(.gnu.version_r) }
+ 
+ 	.note			: { *(.note*) }		:readable	:note
+ 
+@@ -90,20 +87,5 @@
+ 	unwind		PT_IA_64_UNWIND;
+ }
+ 
+-/*
+- * This controls what symbols we export from the DSO.
+- */
+-VERSION
+-{
+-	LINUX_2.5 {
+-	global:
+-		__kernel_syscall_via_break;
+-		__kernel_syscall_via_epc;
+-		__kernel_sigtramp;
+-
+-	local: *;
+-	};
+-}
+-
+ /* The ELF entry point can be used to set the AT_SYSINFO value.  */
+ ENTRY(__kernel_syscall_via_epc)
+diff -Naur linux-3.2.12.o/arch/powerpc/include/asm/vdso.h linux-3.2.12/arch/powerpc/include/asm/vdso.h
+--- linux-3.2.12.o/arch/powerpc/include/asm/vdso.h	2012-03-20 00:03:17.000000000 +0800
++++ linux-3.2.12/arch/powerpc/include/asm/vdso.h	2012-06-13 01:33:09.155056481 +0800
+@@ -10,8 +10,6 @@
+ /* Default map addresses for 32bit vDSO */
+ #define VDSO32_MBASE	VDSO32_LBASE
+ 
+-#define VDSO_VERSION_STRING	LINUX_2.6.15
+-
+ /* Define if 64 bits VDSO has procedure descriptors */
+ #undef VDS64_HAS_DESCRIPTORS
+ 
+diff -Naur linux-3.2.12.o/arch/powerpc/kernel/vdso32/vdso32.lds.S linux-3.2.12/arch/powerpc/kernel/vdso32/vdso32.lds.S
+--- linux-3.2.12.o/arch/powerpc/kernel/vdso32/vdso32.lds.S	2012-03-20 00:03:17.000000000 +0800
++++ linux-3.2.12/arch/powerpc/kernel/vdso32/vdso32.lds.S	2012-06-13 01:34:18.782056481 +0800
+@@ -16,9 +16,6 @@
+ 	.gnu.hash      	: { *(.gnu.hash) }
+ 	.dynsym        	: { *(.dynsym) }
+ 	.dynstr        	: { *(.dynstr) }
+-	.gnu.version   	: { *(.gnu.version) }
+-	.gnu.version_d 	: { *(.gnu.version_d) }
+-	.gnu.version_r 	: { *(.gnu.version_r) }
+ 
+ 	.note		: { *(.note.*) }		:text	:note
+ 
+@@ -125,29 +122,3 @@
+ 	note		PT_NOTE FLAGS(4);		/* PF_R */
+ 	eh_frame_hdr	PT_GNU_EH_FRAME;
+ }
+-
+-/*
+- * This controls what symbols we export from the DSO.
+- */
+-VERSION
+-{
+-	VDSO_VERSION_STRING {
+-	global:
+-		/*
+-		 * Has to be there for the kernel to find
+-		 */
+-		__kernel_datapage_offset;
+-
+-		__kernel_get_syscall_map;
+-		__kernel_gettimeofday;
+-		__kernel_clock_gettime;
+-		__kernel_clock_getres;
+-		__kernel_get_tbfreq;
+-		__kernel_sync_dicache;
+-		__kernel_sync_dicache_p5;
+-		__kernel_sigtramp32;
+-		__kernel_sigtramp_rt32;
+-
+-	local: *;
+-	};
+-}
+diff -Naur linux-3.2.12.o/arch/powerpc/kernel/vdso64/vdso64.lds.S linux-3.2.12/arch/powerpc/kernel/vdso64/vdso64.lds.S
+--- linux-3.2.12.o/arch/powerpc/kernel/vdso64/vdso64.lds.S	2012-03-20 00:03:17.000000000 +0800
++++ linux-3.2.12/arch/powerpc/kernel/vdso64/vdso64.lds.S	2012-06-13 01:34:37.161056481 +0800
+@@ -16,9 +16,6 @@
+ 	.gnu.hash	: { *(.gnu.hash) }
+ 	.dynsym		: { *(.dynsym) }
+ 	.dynstr		: { *(.dynstr) }
+-	.gnu.version	: { *(.gnu.version) }
+-	.gnu.version_d	: { *(.gnu.version_d) }
+-	.gnu.version_r	: { *(.gnu.version_r) }
+ 
+ 	.note		: { *(.note.*) }		:text	:note
+ 
+@@ -125,28 +122,3 @@
+ 	note		PT_NOTE FLAGS(4);		/* PF_R */
+ 	eh_frame_hdr	PT_GNU_EH_FRAME;
+ }
+-
+-/*
+- * This controls what symbols we export from the DSO.
+- */
+-VERSION
+-{
+-	VDSO_VERSION_STRING {
+-	global:
+-		/*
+-		 * Has to be there for the kernel to find
+-		 */
+-		__kernel_datapage_offset;
+-
+-		__kernel_get_syscall_map;
+-		__kernel_gettimeofday;
+-		__kernel_clock_gettime;
+-		__kernel_clock_getres;
+-		__kernel_get_tbfreq;
+-		__kernel_sync_dicache;
+-		__kernel_sync_dicache_p5;
+-		__kernel_sigtramp_rt64;
+-
+-	local: *;
+-	};
+-}
+diff -Naur linux-3.2.12.o/arch/s390/include/asm/vdso.h linux-3.2.12/arch/s390/include/asm/vdso.h
+--- linux-3.2.12.o/arch/s390/include/asm/vdso.h	2012-03-20 00:03:17.000000000 +0800
++++ linux-3.2.12/arch/s390/include/asm/vdso.h	2012-06-13 01:33:09.155056481 +0800
+@@ -7,8 +7,6 @@
+ #define VDSO32_LBASE	0
+ #define VDSO64_LBASE	0
+ 
+-#define VDSO_VERSION_STRING	LINUX_2.6.29
+-
+ #ifndef __ASSEMBLY__
+ 
+ /*
+diff -Naur linux-3.2.12.o/arch/s390/kernel/vdso32/vdso32.lds.S linux-3.2.12/arch/s390/kernel/vdso32/vdso32.lds.S
+--- linux-3.2.12.o/arch/s390/kernel/vdso32/vdso32.lds.S	2012-03-20 00:03:17.000000000 +0800
++++ linux-3.2.12/arch/s390/kernel/vdso32/vdso32.lds.S	2012-06-13 01:34:56.879056481 +0800
+@@ -16,9 +16,6 @@
+ 	.gnu.hash	: { *(.gnu.hash) }
+ 	.dynsym		: { *(.dynsym) }
+ 	.dynstr		: { *(.dynstr) }
+-	.gnu.version	: { *(.gnu.version) }
+-	.gnu.version_d	: { *(.gnu.version_d) }
+-	.gnu.version_r	: { *(.gnu.version_r) }
+ 
+ 	.note		: { *(.note.*) }		:text	:note
+ 
+@@ -118,21 +115,3 @@
+ 	note		PT_NOTE FLAGS(4);		/* PF_R */
+ 	eh_frame_hdr	PT_GNU_EH_FRAME;
+ }
+-
+-/*
+- * This controls what symbols we export from the DSO.
+- */
+-VERSION
+-{
+-	VDSO_VERSION_STRING {
+-	global:
+-		/*
+-		 * Has to be there for the kernel to find
+-		 */
+-		__kernel_gettimeofday;
+-		__kernel_clock_gettime;
+-		__kernel_clock_getres;
+-
+-	local: *;
+-	};
+-}
+diff -Naur linux-3.2.12.o/arch/s390/kernel/vdso64/vdso64.lds.S linux-3.2.12/arch/s390/kernel/vdso64/vdso64.lds.S
+--- linux-3.2.12.o/arch/s390/kernel/vdso64/vdso64.lds.S	2012-03-20 00:03:17.000000000 +0800
++++ linux-3.2.12/arch/s390/kernel/vdso64/vdso64.lds.S	2012-06-13 01:35:11.676056481 +0800
+@@ -16,9 +16,6 @@
+ 	.gnu.hash	: { *(.gnu.hash) }
+ 	.dynsym		: { *(.dynsym) }
+ 	.dynstr		: { *(.dynstr) }
+-	.gnu.version	: { *(.gnu.version) }
+-	.gnu.version_d	: { *(.gnu.version_d) }
+-	.gnu.version_r	: { *(.gnu.version_r) }
+ 
+ 	.note		: { *(.note.*) }		:text	:note
+ 
+@@ -118,21 +115,3 @@
+ 	note		PT_NOTE FLAGS(4);		/* PF_R */
+ 	eh_frame_hdr	PT_GNU_EH_FRAME;
+ }
+-
+-/*
+- * This controls what symbols we export from the DSO.
+- */
+-VERSION
+-{
+-	VDSO_VERSION_STRING {
+-	global:
+-		/*
+-		 * Has to be there for the kernel to find
+-		 */
+-		__kernel_gettimeofday;
+-		__kernel_clock_gettime;
+-		__kernel_clock_getres;
+-
+-	local: *;
+-	};
+-}
+diff -Naur linux-3.2.12.o/arch/sh/kernel/vsyscall/vsyscall.lds.S linux-3.2.12/arch/sh/kernel/vsyscall/vsyscall.lds.S
+--- linux-3.2.12.o/arch/sh/kernel/vsyscall/vsyscall.lds.S	2012-03-20 00:03:17.000000000 +0800
++++ linux-3.2.12/arch/sh/kernel/vsyscall/vsyscall.lds.S	2012-06-13 01:35:27.509056481 +0800
+@@ -23,9 +23,6 @@
+ 	.gnu.hash	: { *(.gnu.hash) }
+ 	.dynsym		: { *(.dynsym) }
+ 	.dynstr		: { *(.dynstr) }
+-	.gnu.version	: { *(.gnu.version) }
+-	.gnu.version_d	: { *(.gnu.version_d) }
+-	.gnu.version_r	: { *(.gnu.version_r) }
+ 
+ 	/*
+ 	 * This linker script is used both with -r and with -shared.
+@@ -67,18 +64,3 @@
+ 	note		PT_NOTE FLAGS(4);		/* PF_R */
+ 	eh_frame_hdr	PT_GNU_EH_FRAME;
+ }
+-
+-/*
+- * This controls what symbols we export from the DSO.
+- */
+-VERSION
+-{
+-	LINUX_2.6 {
+-	global:
+-		__kernel_vsyscall;
+-		__kernel_sigreturn;
+-		__kernel_rt_sigreturn;
+-
+-	local: *;
+-	};
+-}
+diff -Naur linux-3.2.12.o/arch/um/kernel/dyn.lds.S linux-3.2.12/arch/um/kernel/dyn.lds.S
+--- linux-3.2.12.o/arch/um/kernel/dyn.lds.S	2012-03-20 00:03:17.000000000 +0800
++++ linux-3.2.12/arch/um/kernel/dyn.lds.S	2012-06-13 01:33:09.156056481 +0800
+@@ -25,9 +25,6 @@
+   .gnu.hash       : { *(.gnu.hash) }
+   .dynsym         : { *(.dynsym) }
+   .dynstr         : { *(.dynstr) }
+-  .gnu.version    : { *(.gnu.version) }
+-  .gnu.version_d  : { *(.gnu.version_d) }
+-  .gnu.version_r  : { *(.gnu.version_r) }
+   .rel.init       : { *(.rel.init) }
+   .rela.init      : { *(.rela.init) }
+   .rel.text       : { *(.rel.text .rel.text.* .rel.gnu.linkonce.t.*) }
+diff -Naur linux-3.2.12.o/arch/x86/um/vdso/vdso-layout.lds.S linux-3.2.12/arch/x86/um/vdso/vdso-layout.lds.S
+--- linux-3.2.12.o/arch/x86/um/vdso/vdso-layout.lds.S	2012-03-20 00:03:17.000000000 +0800
++++ linux-3.2.12/arch/x86/um/vdso/vdso-layout.lds.S	2012-06-13 01:33:09.156056481 +0800
+@@ -12,9 +12,6 @@
+ 	.gnu.hash	: { *(.gnu.hash) }
+ 	.dynsym		: { *(.dynsym) }
+ 	.dynstr		: { *(.dynstr) }
+-	.gnu.version	: { *(.gnu.version) }
+-	.gnu.version_d	: { *(.gnu.version_d) }
+-	.gnu.version_r	: { *(.gnu.version_r) }
+ 
+ 	.note		: { *(.note.*) }		:text	:note
+ 
+diff -Naur linux-3.2.12.o/arch/x86/um/vdso/vdso.lds.S linux-3.2.12/arch/x86/um/vdso/vdso.lds.S
+--- linux-3.2.12.o/arch/x86/um/vdso/vdso.lds.S	2012-03-20 00:03:17.000000000 +0800
++++ linux-3.2.12/arch/x86/um/vdso/vdso.lds.S	2012-06-13 01:35:49.377056481 +0800
+@@ -11,22 +11,4 @@
+ #define VDSO_PRELINK 0xffffffffff700000
+ #include "vdso-layout.lds.S"
+ 
+-/*
+- * This controls what userland symbols we export from the vDSO.
+- */
+-VERSION {
+-	LINUX_2.6 {
+-	global:
+-		clock_gettime;
+-		__vdso_clock_gettime;
+-		gettimeofday;
+-		__vdso_gettimeofday;
+-		getcpu;
+-		__vdso_getcpu;
+-		time;
+-		__vdso_time;
+-	local: *;
+-	};
+-}
+-
+ VDSO64_PRELINK = VDSO_PRELINK;
+diff -Naur linux-3.2.12.o/arch/x86/vdso/vdso32/vdso32.lds.S linux-3.2.12/arch/x86/vdso/vdso32/vdso32.lds.S
+--- linux-3.2.12.o/arch/x86/vdso/vdso32/vdso32.lds.S	2012-03-20 00:03:17.000000000 +0800
++++ linux-3.2.12/arch/x86/vdso/vdso32/vdso32.lds.S	2012-06-13 01:36:05.578056481 +0800
+@@ -15,20 +15,6 @@
+ ENTRY(__kernel_vsyscall);
+ 
+ /*
+- * This controls what userland symbols we export from the vDSO.
+- */
+-VERSION
+-{
+-	LINUX_2.5 {
+-	global:
+-		__kernel_vsyscall;
+-		__kernel_sigreturn;
+-		__kernel_rt_sigreturn;
+-	local: *;
+-	};
+-}
+-
+-/*
+  * Symbols we define here called VDSO* get their values into vdso32-syms.h.
+  */
+ VDSO32_PRELINK		= VDSO_PRELINK;
+diff -Naur linux-3.2.12.o/arch/x86/vdso/vdso-layout.lds.S linux-3.2.12/arch/x86/vdso/vdso-layout.lds.S
+--- linux-3.2.12.o/arch/x86/vdso/vdso-layout.lds.S	2012-03-20 00:03:17.000000000 +0800
++++ linux-3.2.12/arch/x86/vdso/vdso-layout.lds.S	2012-06-13 01:33:09.156056481 +0800
+@@ -12,9 +12,6 @@
+ 	.gnu.hash	: { *(.gnu.hash) }
+ 	.dynsym		: { *(.dynsym) }
+ 	.dynstr		: { *(.dynstr) }
+-	.gnu.version	: { *(.gnu.version) }
+-	.gnu.version_d	: { *(.gnu.version_d) }
+-	.gnu.version_r	: { *(.gnu.version_r) }
+ 
+ 	.note		: { *(.note.*) }		:text	:note
+ 
+diff -Naur linux-3.2.12.o/arch/x86/vdso/vdso.lds.S linux-3.2.12/arch/x86/vdso/vdso.lds.S
+--- linux-3.2.12.o/arch/x86/vdso/vdso.lds.S	2012-03-20 00:03:17.000000000 +0800
++++ linux-3.2.12/arch/x86/vdso/vdso.lds.S	2012-06-13 01:36:24.566056481 +0800
+@@ -11,22 +11,4 @@
+ #define VDSO_PRELINK 0xffffffffff700000
+ #include "vdso-layout.lds.S"
+ 
+-/*
+- * This controls what userland symbols we export from the vDSO.
+- */
+-VERSION {
+-	LINUX_2.6 {
+-	global:
+-		clock_gettime;
+-		__vdso_clock_gettime;
+-		gettimeofday;
+-		__vdso_gettimeofday;
+-		getcpu;
+-		__vdso_getcpu;
+-		time;
+-		__vdso_time;
+-	local: *;
+-	};
+-}
+-
+ VDSO64_PRELINK = VDSO_PRELINK;

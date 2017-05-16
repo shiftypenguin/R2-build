@@ -1,0 +1,92 @@
+#!/bin/sh
+export PATH=/bin:/sbin
+
+_init=/sbin/init
+_usbwait=5
+
+/bin/busybox --install -s
+/smdev
+
+getkopt()
+{
+	echo "$@" | cut -d'=' -f2
+}
+for x in $(cat /proc/cmdline); do
+	case ${x} in
+		init=*) _init=$(getkopt ${x}) ;;
+		rootdev=*) _rootdev=$(getkopt ${x}) ;;
+		usbwait=*) _usbwait=$(getkopt ${x}) ;;
+	esac
+done
+
+dmesg -n 1
+clear
+
+if [ -n "${_usbwait}" ]; then
+	echo -n "Waiting ${_usbwait} seconds..."
+	sleep ${_usbwait}
+	mdev -s
+	echo
+fi
+
+mkdir -p /z /t
+mount -n -t tmpfs tmpfs /z
+
+if [ -z "${_rootdev}" ]; then
+	rm -fr /dev/_t
+	mkdir /dev/_t
+	for _dev in $(find /sys/block -follow -maxdepth 3 -name dev 2>/dev/null); do
+		mknod /dev/_t/$(basename $(dirname ${_dev})) b $(sed 's@:@\ @' ${_dev}) >/dev/null 2>&1
+	done
+	rm -fr /dev/_t/fd*
+	rm -fr /dev/_t/loop*
+	rm -fr /dev/_t/ram*
+	rm -fr /dev/_t/nbd*
+
+	_devs="/dev/_t/*"
+	for _dev in ${_devs}; do
+		_bdev=$(basename ${_dev})
+#		echo "Trying /dev/${_bdev} ..."
+		if mount -n -r -o noload /dev/${_bdev} /t >/dev/null 2>&1; then
+			if [ -f "/t/.ramlinux" -a -x "/t/${_init}" ]; then
+				_rootdev=/dev/${_bdev}
+				break
+			else
+				umount /t
+			fi
+		fi
+	done
+	rm -fr /dev/_t
+	if [ -z "${_rootdev}" ]; then exec execvp /bin/sh -sh; fi
+else
+	if ! mount -n -r -o noload ${_rootdev} /t >/dev/null 2>&1; then exec execvp /bin/sh -sh; fi
+fi
+
+echo "Found filesystem on ${_rootdev}"
+
+mkdir -p /z/bin /z/sbin /z/lib /z/etc
+cp -a /t/bin/busybox /z/bin/
+if [ -f "/t/lib/libc.so" ]; then
+	cp -a /t/lib/libc.so /t/lib/sldl /z/lib/
+fi
+mkdir -p /z/dev /z/mnt /z/proc /z/sys /z/var /z/var/log /z/var/run
+mkdir -m1777 /z/tmp
+mkdir -m0750 /z/root
+cp -a /dev/console /dev/null /z/dev/
+chroot /z /bin/busybox --install -s
+
+echo -n "Copying to RAM:"
+tar -C/t -c . | tar -C/z -x
+echo " Done!"
+
+rm -f /z/.ramlinux
+cat > /z/etc/fstab << EOF
+tmpfs	/	tmpfs	defaults		0	0
+tmpfs	/tmp	tmpfs	nodev,nosuid,defaults	0	0
+EOF
+cp -a /altinit /z/etc/init/
+umount /t
+umount /proc
+umount /sys
+umount /dev
+exec switch_root /z ${_init}

@@ -1,0 +1,18 @@
+This patch disables unnecessary build-id tags
+
+diff -Naur linux-3.2.12.o/Makefile linux-3.2.12/Makefile
+--- linux-3.2.12.o/Makefile	2012-03-20 00:03:17.000000000 +0800
++++ linux-3.2.12/Makefile	2012-05-28 14:23:10.146554120 +0800
+@@ -658,12 +658,6 @@
+         KBUILD_CFLAGS += $(KCFLAGS)
+ endif
+ 
+-# Use --build-id when available.
+-LDFLAGS_BUILD_ID = $(patsubst -Wl$(comma)%,%,\
+-			      $(call cc-ldoption, -Wl$(comma)--build-id,))
+-KBUILD_LDFLAGS_MODULE += $(LDFLAGS_BUILD_ID)
+-LDFLAGS_vmlinux += $(LDFLAGS_BUILD_ID)
+-
+ ifeq ($(CONFIG_STRIP_ASM_SYMS),y)
+ LDFLAGS_vmlinux	+= $(call ld-option, -X,)
+ endif

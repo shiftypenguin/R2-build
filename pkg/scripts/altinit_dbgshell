@@ -1,0 +1,14 @@
+#!/bin/sh
+case "${1}" in
+	do)
+		/sbin/smdev
+		mount -a
+		exec /bin/sh
+	;;
+	*)
+		echo -n "Press RETURN in next second to get a debug shell..."
+		if read -t 1 RETURN; then exec "$0" do; fi
+		echo
+		_INIT=1 exec /sbin/init
+	;;
+esac

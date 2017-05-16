@@ -1,0 +1,77 @@
+--- musl-1.1.4.o/include/paths.h
++++ musl-1.1.4/include/paths.h
+@@ -1,8 +1,8 @@
+ #ifndef _PATHS_H
+ #define _PATHS_H
+ 
+-#define	_PATH_DEFPATH "/usr/local/bin:/bin:/usr/bin"
+-#define	_PATH_STDPATH "/bin:/usr/bin:/sbin:/usr/sbin"
++#define	_PATH_DEFPATH "/bin:/local/bin"
++#define	_PATH_STDPATH "/bin:/local/bin:/sbin:/local/sbin"
+ 
+ #define	_PATH_BSHELL	"/bin/sh"
+ #define	_PATH_CONSOLE	"/dev/console"
+@@ -10,16 +10,16 @@
+ #define	_PATH_KLOG	"/proc/kmsg"
+ #define	_PATH_LASTLOG	"/var/log/lastlog"
+ #define	_PATH_MAILDIR	"/var/mail"
+-#define	_PATH_MAN	"/usr/share/man"
++#define	_PATH_MAN	"/share/man"
+ #define	_PATH_MNTTAB	"/etc/fstab"
+ #define	_PATH_MOUNTED	"/etc/mtab"
+ #define	_PATH_NOLOGIN	"/etc/nologin"
+-#define	_PATH_SENDMAIL	"/usr/sbin/sendmail"
++#define	_PATH_SENDMAIL	"/sbin/sendmail"
+ #define	_PATH_SHADOW	"/etc/shadow"
+ #define	_PATH_SHELLS	"/etc/shells"
+ #define	_PATH_TTY	"/dev/tty"
+ #define _PATH_UTMP	"/dev/null/utmp"
+-#define	_PATH_VI	"/usr/bin/vi"
++#define	_PATH_VI	"/bin/vi"
+ #define _PATH_WTMP	"/dev/null/wtmp"
+ 
+ #define	_PATH_DEV	"/dev/"
+--- musl-1.1.4.o/src/conf/confstr.c
++++ musl-1.1.4/src/conf/confstr.c
+@@ -6,7 +6,7 @@
+ {
+ 	const char *s = "";
+ 	if (!name) {
+-		s = "/bin:/usr/bin";
++		s = "/bin:/local/bin";
+ 	} else if ((name&~4U)!=1 && name-_CS_POSIX_V6_ILP32_OFF32_CFLAGS>31U) {
+ 		errno = EINVAL;
+ 		return 0;
+--- musl-1.1.4.o/src/ldso/dynlink.c
++++ musl-1.1.4/src/ldso/dynlink.c
+@@ -751,7 +751,7 @@
+ 					sys_path = "";
+ 				}
+ 			}
+-			if (!sys_path) sys_path = "/lib:/usr/local/lib:/usr/lib";
++			if (!sys_path) sys_path = "/lib:/local/lib";
+ 			fd = path_open(name, sys_path, buf, sizeof buf);
+ 		}
+ 		pathname = buf;
+--- musl-1.1.4.o/src/process/execvp.c
++++ musl-1.1.4/src/process/execvp.c
+@@ -18,7 +18,7 @@
+ 	if (strchr(file, '/'))
+ 		return execve(file, argv, envp);
+ 
+-	if (!path) path = "/usr/local/bin:/bin:/usr/bin";
++	if (!path) path = "/bin:/local/bin";
+ 	k = strnlen(file, NAME_MAX+1);
+ 	if (k > NAME_MAX) {
+ 		errno = ENAMETOOLONG;
+--- musl-1.1.4.o/src/time/__tz.c
++++ musl-1.1.4/src/time/__tz.c
+@@ -125,7 +125,7 @@
+ 	const unsigned char *map = 0;
+ 	size_t i;
+ 	static const char search[] =
+-		"/usr/share/zoneinfo/\0/share/zoneinfo/\0/etc/zoneinfo/\0";
++		"/share/zoneinfo/\0/etc/zoneinfo/\0";
+ 
+ 	s = getenv("TZ");
+ 	if (!s || !*s) s = "/etc/localtime";

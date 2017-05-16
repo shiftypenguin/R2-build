@@ -1,0 +1,11 @@
+--- super-1.9.3.o/config.h
++++ super-1.9.3/config.h
+@@ -11,7 +11,7 @@
+ /* default shell which is started when login with -I */
+ #define DEFAULT_SHELL "/bin/sh"
+ /* safe path: only binaries from these directories are run when only name is told */
+-#define SAFE_PATH "/bin:/sbin:/usr/bin:/usr/sbin"
++#define SAFE_PATH "/bin:/sbin:/local/bin:/local/sbin:/usr/bin:/usr/sbin"
+ 
+ /* portability */
+ 

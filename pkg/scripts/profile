@@ -1,0 +1,36 @@
+# paths
+
+if [ $(id -u) -eq 0 ]; then
+	export PATH="/sbin:/bin"
+else
+	export PATH="/bin:/local/bin"
+fi
+
+# history
+
+if [ -n "${BASH}" ]; then
+	export HISTSIZE=10000
+	export HISTTIMEFORMAT="%h/%d - %H:%M:%S "
+	export HISTIGNORE="&:[bf]g:exit"
+	export INPUTRC=/etc/inputrc
+	trap 'history -a' TERM
+fi
+
+# prompt
+
+BOLD="\[\e[1m\]"
+NORMAL="\[\e[0m\]"
+if [ $(id -u) -eq 0 ]; then
+	PS1="${BOLD}\u [ ${NORMAL}\w${BOLD} ][${NORMAL}\$(date +%d.%m.%Y\ %H:%M:%S)${BOLD}]${NORMAL}\n# "
+else
+	PS1="${BOLD}\u [ ${NORMAL}\w${BOLD} ][${NORMAL}\$(date +%d.%m.%Y\ %H:%M:%S)${BOLD}]${NORMAL}\n% "
+fi
+unset BOLD
+unset NORMAL
+unset SHCHAR
+
+# term
+
+if [ -n "${BASH}" -a "${TERM}" != "linux" ]; then
+	PROMPT_COMMAND='echo -ne "\033]0;${USER}@${HOSTNAME}:${PWD/#$HOME/~}\007"'
+fi

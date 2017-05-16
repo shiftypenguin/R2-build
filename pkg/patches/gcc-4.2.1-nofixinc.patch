@@ -1,0 +1,107 @@
+--- gcc-4.2.1.o/gcc/Makefile.in
++++ gcc-4.2.1/gcc/Makefile.in
+@@ -409,8 +409,8 @@
+ SYSTEM_HEADER_DIR = `echo @SYSTEM_HEADER_DIR@ | sed -e :a -e 's,[^/]*/\.\.\/,,' -e ta`
+ 
+ # Control whether to run fixproto and fixincludes.
+-STMP_FIXPROTO = @STMP_FIXPROTO@
+-STMP_FIXINC = @STMP_FIXINC@
++STMP_FIXPROTO =
++STMP_FIXINC =
+ 
+ # Test to see whether <limits.h> exists in the system header files.
+ LIMITS_H_TEST = [ -f $(SYSTEM_HEADER_DIR)/limits.h ]
+@@ -3198,10 +3198,6 @@
+ 	rm -f include/unwind.h
+ 	cp $(UNWIND_H) include/unwind.h
+ 	chmod a+r include/limits.h
+-# Install the README
+-	rm -f include/README
+-	cp $(srcdir)/../fixincludes/README-fixinc include/README
+-	chmod a+r include/README
+ 	$(STAMP) $@
+ 
+ .PHONY: install-gcc-tooldir
+@@ -3231,42 +3227,6 @@
+ # out of date.  Yuck.
+ ../$(build_subdir)/fixincludes/fixincl: ; @ :
+ 
+-# Build fixed copies of system files.
+-# Abort if no system headers available, unless building a crosscompiler.
+-# FIXME: abort unless building --without-headers would be more accurate and less ugly
+-stmp-fixinc: gsyslimits.h macro_list \
+-  $(build_objdir)/fixincludes/fixincl \
+-  $(build_objdir)/fixincludes/fixinc.sh
+-	@if ! $(inhibit_libc) && test ! -d ${SYSTEM_HEADER_DIR}; then \
+-	  echo The directory that should contain system headers does not exist: >&2 ; \
+-	  echo "  ${SYSTEM_HEADER_DIR}" >&2 ; \
+-	  tooldir_sysinc=`echo "${gcc_tooldir}/sys-include" | sed -e :a -e "s,[^/]*/\.\.\/,," -e ta`; \
+-	  if test "x${SYSTEM_HEADER_DIR}" = "x$${tooldir_sysinc}"; \
+-	  then sleep 1; else exit 1; fi; \
+-	fi
+-	rm -rf include; mkdir include
+-	-chmod a+rx include
+-	if [ -d ../prev-gcc ]; then \
+-	  cd ../prev-gcc && \
+-	  $(MAKE) real-$(INSTALL_HEADERS_DIR) DESTDIR=`pwd`/../gcc/ \
+-	    libsubdir=. ; \
+-	else \
+-	  (TARGET_MACHINE='$(target)'; srcdir=`cd $(srcdir); ${PWD_COMMAND}`; \
+-	    SHELL='$(SHELL)'; MACRO_LIST=`${PWD_COMMAND}`/macro_list ; \
+-	    export TARGET_MACHINE srcdir SHELL MACRO_LIST && \
+-	    cd $(build_objdir)/fixincludes && \
+-	    $(SHELL) ./fixinc.sh ../../gcc/include \
+-	      $(SYSTEM_HEADER_DIR) $(OTHER_FIXINCLUDES_DIRS) ); \
+-	  rm -f include/syslimits.h; \
+-	  if [ -f include/limits.h ]; then \
+-	    mv include/limits.h include/syslimits.h; \
+-	  else \
+-	    cp $(srcdir)/gsyslimits.h include/syslimits.h; \
+-	  fi; \
+-	fi
+-	chmod a+r include/syslimits.h
+-	$(STAMP) stmp-fixinc
+-
+ # Files related to the fixproto script.
+ # gen-protos and fix-header are compiled with CC_FOR_BUILD, but they are only
+ # used in native and host-x-target builds, so it's safe to link them with
+@@ -3329,25 +3289,6 @@
+ 		$(STAMP) fixhdr.ready; \
+ 	fi
+ 
+-# stmp-int-hdrs is to make sure fixincludes has already finished.
+-# The if statement is so that we don't run fixproto a second time
+-# if it has already been run on the files in `include'.
+-stmp-fixproto: fixhdr.ready fixproto stmp-int-hdrs
+-	if [ -f include/fixed ] ; then true; \
+-	else \
+-	  : This line works around a 'make' bug in BSDI 1.1.; \
+-	  FIXPROTO_DEFINES="$(FIXPROTO_DEFINES)"; export FIXPROTO_DEFINES; \
+-	  FIX_HEADER="build/fix-header$(build_exeext)"; export FIX_HEADER; \
+-	  mkinstalldirs="$(mkinstalldirs)"; \
+-	    export mkinstalldirs; \
+-	  if [ -d "$(SYSTEM_HEADER_DIR)" ]; then \
+-	    $(SHELL) ${srcdir}/fixproto include include $(SYSTEM_HEADER_DIR); \
+-	    if [ $$? -eq 0 ] ; then true ; else exit 1 ; fi ; \
+-	  else true; fi; \
+-	  $(STAMP) include/fixed; \
+-	fi
+-	$(STAMP) stmp-fixproto
+-
+ # We can't run fixproto (it's being built for a different host), but we still
+ # need to install it so that the user can run it when the compiler is
+ # installed.
+@@ -3916,13 +3857,6 @@
+ 	$(INSTALL_DATA) $(srcdir)/gsyslimits.h \
+ 	  $(DESTDIR)$(itoolsdatadir)/gsyslimits.h
+ 	$(INSTALL_DATA) macro_list $(DESTDIR)$(itoolsdatadir)/macro_list
+-	if [ x$(STMP_FIXPROTO) != x ] ; then \
+-	  $(INSTALL_SCRIPT) $(mkinstalldirs) \
+-		$(DESTDIR)$(itoolsdir)/mkinstalldirs ; \
+-	  $(INSTALL_SCRIPT) $(srcdir)/fixproto $(DESTDIR)$(itoolsdir)/fixproto ; \
+-	  $(INSTALL_PROGRAM) build/fix-header$(build_exeext) \
+-		$(DESTDIR)$(itoolsdir)/fix-header$(build_exeext) ; \
+-	else :; fi
+ 	echo 'SYSTEM_HEADER_DIR="'"$(SYSTEM_HEADER_DIR)"'"' \
+ 		> $(DESTDIR)$(itoolsdatadir)/mkheaders.conf
+ 	echo 'OTHER_FIXINCLUDES_DIRS="$(OTHER_FIXINCLUDES_DIRS)"' \

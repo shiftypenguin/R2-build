@@ -1,0 +1,523 @@
+diff -Naur busybox-1.20.1.o/e2fsprogs/fsck.c busybox-1.20.1/e2fsprogs/fsck.c
+--- busybox-1.20.1.o/e2fsprogs/fsck.c	2012-04-22 09:45:24.000000000 +0800
++++ busybox-1.20.1/e2fsprogs/fsck.c	2012-06-01 19:00:18.303965962 +0800
+@@ -1053,7 +1053,7 @@
+ 	new_args(); /* args[num_args - 1] is the last, NULL element */
+ 
+ 	if (!notitle)
+-		puts("fsck (busybox "BB_VER", "BB_BT")");
++		puts("fsck (busybox "BB_VER")");
+ 
+ 	/* Even plain "fsck /dev/hda1" needs fstab to get fs type,
+ 	 * so we are scanning it anyway */
+diff -Naur busybox-1.20.1.o/editors/vi.c busybox-1.20.1/editors/vi.c
+--- busybox-1.20.1.o/editors/vi.c	2012-04-22 09:45:24.000000000 +0800
++++ busybox-1.20.1/editors/vi.c	2012-06-01 19:00:18.303965962 +0800
+@@ -1287,7 +1287,7 @@
+ 		}
+ #endif /* FEATURE_VI_SEARCH */
+ 	} else if (strncmp(cmd, "version", i) == 0) {  // show software version
+-		status_line(BB_VER " " BB_BT);
++		status_line(BB_VER " ");
+ 	} else if (strncmp(cmd, "write", i) == 0  // write text to file
+ 	        || strncmp(cmd, "wq", i) == 0
+ 	        || strncmp(cmd, "wn", i) == 0
+diff -Naur busybox-1.20.1.o/findutils/find.c busybox-1.20.1/findutils/find.c
+--- busybox-1.20.1.o/findutils/find.c	2012-05-28 08:48:23.000000000 +0800
++++ busybox-1.20.1/findutils/find.c	2012-06-01 19:00:18.304965962 +0800
+@@ -85,6 +85,38 @@
+ //config:	  Allow searching based on the modification time of
+ //config:	  files, in minutes.
+ //config:
++//config:config FEATURE_FIND_CTIME
++//config:	bool "Enable -ctime: creation time matching"
++//config:	default y
++//config:	depends on FIND
++//config:	help
++//config:	  Allow searching based on the creation time of
++//config:	  files, in days.
++//config:
++//config:config FEATURE_FIND_CMIN
++//config:	bool "Enable -cmin: creation time matching by minutes"
++//config:	default y
++//config:	depends on FIND
++//config:	help
++//config:	  Allow searching based on the creation time of
++//config:	  files, in minutes.
++//config:
++//config:config FEATURE_FIND_ATIME
++//config:	bool "Enable -atime: access time matching"
++//config:	default y
++//config:	depends on FIND
++//config:	help
++//config:	  Allow searching based on the access time of
++//config:	  files, in days.
++//config:
++//config:config FEATURE_FIND_AMIN
++//config:	bool "Enable -amin: access time matching by minutes"
++//config:	default y
++//config:	depends on FIND
++//config:	help
++//config:	  Allow searching based on the access time of
++//config:	  files, in minutes.
++//config:
+ //config:config FEATURE_FIND_PERM
+ //config:	bool "Enable -perm: permissions matching"
+ //config:	default y
+@@ -122,6 +154,22 @@
+ //config:	  Support the 'find -newer' option for finding any files which have
+ //config:	  modification time that is more recent than the specified FILE.
+ //config:
++//config:config FEATURE_FIND_CNEWER
++//config:	bool "Enable -cnewer: compare file creation times"
++//config:	default y
++//config:	depends on FIND
++//config:	help
++//config:	  Support the 'find -cnewer' option for finding any files which have
++//config:	  creation time that is more recent than the specified FILE.
++//config:
++//config:config FEATURE_FIND_ANEWER
++//config:	bool "Enable -anewer: compare file access times"
++//config:	default y
++//config:	depends on FIND
++//config:	help
++//config:	  Support the 'find -anewer' option for finding any files which have
++//config:	  access time that is more recent than the specified FILE.
++//config:
+ //config:config FEATURE_FIND_INUM
+ //config:	bool "Enable -inum: inode number matching"
+ //config:	default y
+@@ -283,9 +331,31 @@
+ //usage:     "\n	-mmin MINS	mtime is greater than (+N), less than (-N),"
+ //usage:     "\n			or exactly N minutes in the past"
+ //usage:	)
++//usage:	IF_FEATURE_FIND_CTIME(
++//usage:     "\n	-ctime DAYS	ctime is greater than (+N), less than (-N),"
++//usage:     "\n			or exactly N days in the past"
++//usage:	)
++//usage:	IF_FEATURE_FIND_CMIN(
++//usage:     "\n	-cmin MINS	ctime is greater than (+N), less than (-N),"
++//usage:     "\n			or exactly N minutes in the past"
++//usage:	)
++//usage:	IF_FEATURE_FIND_ATIME(
++//usage:     "\n	-atime DAYS	atime is greater than (+N), less than (-N),"
++//usage:     "\n			or exactly N days in the past"
++//usage:	)
++//usage:	IF_FEATURE_FIND_AMIN(
++//usage:     "\n	-amin MINS	atime is greater than (+N), less than (-N),"
++//usage:     "\n			or exactly N minutes in the past"
++//usage:	)
+ //usage:	IF_FEATURE_FIND_NEWER(
+ //usage:     "\n	-newer FILE	mtime is more recent than FILE's"
+ //usage:	)
++//usage:	IF_FEATURE_FIND_CNEWER(
++//usage:     "\n	-cnewer FILE	ctime is more recent than FILE's"
++//usage:	)
++//usage:	IF_FEATURE_FIND_ANEWER(
++//usage:     "\n	-anewer FILE	atime is more recent than FILE's"
++//usage:	)
+ //usage:	IF_FEATURE_FIND_INUM(
+ //usage:     "\n	-inum N		File has inode number N"
+ //usage:	)
+@@ -366,7 +436,13 @@
+ IF_FEATURE_FIND_PERM(   ACTS(perm,  char perm_char; mode_t perm_mask;))
+ IF_FEATURE_FIND_MTIME(  ACTS(mtime, char mtime_char; unsigned mtime_days;))
+ IF_FEATURE_FIND_MMIN(   ACTS(mmin,  char mmin_char; unsigned mmin_mins;))
++IF_FEATURE_FIND_CTIME(  ACTS(ctime, char ctime_char; unsigned ctime_days;))
++IF_FEATURE_FIND_CMIN(   ACTS(cmin,  char cmin_char; unsigned cmin_mins;))
++IF_FEATURE_FIND_ATIME(  ACTS(atime, char atime_char; unsigned atime_days;))
++IF_FEATURE_FIND_AMIN(   ACTS(amin,  char amin_char; unsigned amin_mins;))
+ IF_FEATURE_FIND_NEWER(  ACTS(newer, time_t newer_mtime;))
++IF_FEATURE_FIND_CNEWER( ACTS(cnewer, time_t newer_ctime;))
++IF_FEATURE_FIND_ANEWER( ACTS(anewer, time_t newer_atime;))
+ IF_FEATURE_FIND_INUM(   ACTS(inum,  ino_t inode_num;))
+ IF_FEATURE_FIND_USER(   ACTS(user,  uid_t uid;))
+ IF_FEATURE_FIND_SIZE(   ACTS(size,  char size_char; off_t size;))
+@@ -592,12 +668,76 @@
+ 	return file_age >= mmin_secs && file_age < (mmin_secs + 60);
+ }
+ #endif
++#if ENABLE_FEATURE_FIND_CTIME
++ACTF(ctime)
++{
++	time_t file_age = time(NULL) - statbuf->st_ctime;
++	time_t ctime_secs = ap->ctime_days * 24*60*60;
++	if (ap->ctime_char == '+')
++		return file_age >= ctime_secs + 24*60*60;
++	if (ap->ctime_char == '-')
++		return file_age < ctime_secs;
++	/* just numeric mtime */
++	return file_age >= ctime_secs && file_age < (ctime_secs + 24*60*60);
++}
++#endif
++#if ENABLE_FEATURE_FIND_CMIN
++ACTF(cmin)
++{
++	time_t file_age = time(NULL) - statbuf->st_ctime;
++	time_t cmin_secs = ap->cmin_mins * 60;
++	if (ap->cmin_char == '+')
++		return file_age >= cmin_secs + 60;
++	if (ap->cmin_char == '-')
++		return file_age < cmin_secs;
++	/* just numeric mmin */
++	return file_age >= cmin_secs && file_age < (cmin_secs + 60);
++}
++#endif
++#if ENABLE_FEATURE_FIND_ATIME
++ACTF(atime)
++{
++	time_t file_age = time(NULL) - statbuf->st_atime;
++	time_t atime_secs = ap->atime_days * 24*60*60;
++	if (ap->atime_char == '+')
++		return file_age >= atime_secs + 24*60*60;
++	if (ap->atime_char == '-')
++		return file_age < atime_secs;
++	/* just numeric mtime */
++	return file_age >= atime_secs && file_age < (atime_secs + 24*60*60);
++}
++#endif
++#if ENABLE_FEATURE_FIND_AMIN
++ACTF(amin)
++{
++	time_t file_age = time(NULL) - statbuf->st_atime;
++	time_t amin_secs = ap->amin_mins * 60;
++	if (ap->amin_char == '+')
++		return file_age >= amin_secs + 60;
++	if (ap->amin_char == '-')
++		return file_age < amin_secs;
++	/* just numeric mmin */
++	return file_age >= amin_secs && file_age < (amin_secs + 60);
++}
++#endif
+ #if ENABLE_FEATURE_FIND_NEWER
+ ACTF(newer)
+ {
+ 	return (ap->newer_mtime < statbuf->st_mtime);
+ }
+ #endif
++#if ENABLE_FEATURE_FIND_CNEWER
++ACTF(cnewer)
++{
++	return (ap->newer_ctime < statbuf->st_ctime);
++}
++#endif
++#if ENABLE_FEATURE_FIND_ANEWER
++ACTF(anewer)
++{
++	return (ap->newer_atime < statbuf->st_atime);
++}
++#endif
+ #if ENABLE_FEATURE_FIND_INUM
+ ACTF(inum)
+ {
+@@ -798,6 +938,8 @@
+ 
+ #if ENABLE_FEATURE_FIND_PERM \
+  || ENABLE_FEATURE_FIND_MTIME || ENABLE_FEATURE_FIND_MMIN \
++ || ENABLE_FEATURE_FIND_CTIME || ENABLE_FEATURE_FIND_CMIN \
++ || ENABLE_FEATURE_FIND_ATIME || ENABLE_FEATURE_FIND_AMIN \
+  || ENABLE_FEATURE_FIND_SIZE  || ENABLE_FEATURE_FIND_LINKS
+ static const char* plus_minus_num(const char* str)
+ {
+@@ -842,7 +984,13 @@
+ 	IF_FEATURE_FIND_PERM(   PARM_perm      ,)
+ 	IF_FEATURE_FIND_MTIME(  PARM_mtime     ,)
+ 	IF_FEATURE_FIND_MMIN(   PARM_mmin      ,)
++	IF_FEATURE_FIND_CTIME(  PARM_ctime     ,)
++	IF_FEATURE_FIND_CMIN(   PARM_cmin      ,)
++	IF_FEATURE_FIND_ATIME(  PARM_atime     ,)
++	IF_FEATURE_FIND_AMIN(   PARM_amin      ,)
+ 	IF_FEATURE_FIND_NEWER(  PARM_newer     ,)
++	IF_FEATURE_FIND_CNEWER( PARM_cnewer    ,)
++	IF_FEATURE_FIND_ANEWER( PARM_anewer    ,)
+ 	IF_FEATURE_FIND_INUM(   PARM_inum      ,)
+ 	IF_FEATURE_FIND_USER(   PARM_user      ,)
+ 	IF_FEATURE_FIND_GROUP(  PARM_group     ,)
+@@ -883,7 +1031,13 @@
+ 	IF_FEATURE_FIND_PERM(   "-perm\0"   )
+ 	IF_FEATURE_FIND_MTIME(  "-mtime\0"  )
+ 	IF_FEATURE_FIND_MMIN(   "-mmin\0"   )
++	IF_FEATURE_FIND_CTIME(  "-ctime\0"  )
++	IF_FEATURE_FIND_CMIN(   "-cmin\0"   )
++	IF_FEATURE_FIND_ATIME(  "-atime\0"  )
++	IF_FEATURE_FIND_AMIN(   "-amin\0"   )
+ 	IF_FEATURE_FIND_NEWER(  "-newer\0"  )
++	IF_FEATURE_FIND_CNEWER( "-cnewer\0"  )
++	IF_FEATURE_FIND_ANEWER( "-anewer\0"  )
+ 	IF_FEATURE_FIND_INUM(   "-inum\0"   )
+ 	IF_FEATURE_FIND_USER(   "-user\0"   )
+ 	IF_FEATURE_FIND_GROUP(  "-group\0"  )
+@@ -1143,6 +1297,42 @@
+ 			ap->mmin_mins = xatoul(plus_minus_num(arg1));
+ 		}
+ #endif
++#if ENABLE_FEATURE_FIND_CTIME
++		else if (parm == PARM_ctime) {
++			action_ctime *ap;
++			dbg("%d", __LINE__);
++			ap = ALLOC_ACTION(ctime);
++			ap->ctime_char = arg1[0];
++			ap->ctime_days = xatoul(plus_minus_num(arg1));
++		}
++#endif
++#if ENABLE_FEATURE_FIND_CMIN
++		else if (parm == PARM_cmin) {
++			action_cmin *ap;
++			dbg("%d", __LINE__);
++			ap = ALLOC_ACTION(cmin);
++			ap->cmin_char = arg1[0];
++			ap->cmin_mins = xatoul(plus_minus_num(arg1));
++		}
++#endif
++#if ENABLE_FEATURE_FIND_ATIME
++		else if (parm == PARM_atime) {
++			action_atime *ap;
++			dbg("%d", __LINE__);
++			ap = ALLOC_ACTION(atime);
++			ap->atime_char = arg1[0];
++			ap->atime_days = xatoul(plus_minus_num(arg1));
++		}
++#endif
++#if ENABLE_FEATURE_FIND_AMIN
++		else if (parm == PARM_amin) {
++			action_amin *ap;
++			dbg("%d", __LINE__);
++			ap = ALLOC_ACTION(amin);
++			ap->amin_char = arg1[0];
++			ap->amin_mins = xatoul(plus_minus_num(arg1));
++		}
++#endif
+ #if ENABLE_FEATURE_FIND_NEWER
+ 		else if (parm == PARM_newer) {
+ 			struct stat stat_newer;
+@@ -1153,6 +1343,26 @@
+ 			ap->newer_mtime = stat_newer.st_mtime;
+ 		}
+ #endif
++#if ENABLE_FEATURE_FIND_CNEWER
++		else if (parm == PARM_cnewer) {
++			struct stat stat_cnewer;
++			action_cnewer *ap;
++			dbg("%d", __LINE__);
++			ap = ALLOC_ACTION(cnewer);
++			xstat(arg1, &stat_cnewer);
++			ap->newer_ctime = stat_cnewer.st_ctime;
++		}
++#endif
++#if ENABLE_FEATURE_FIND_ANEWER
++		else if (parm == PARM_anewer) {
++			struct stat stat_anewer;
++			action_anewer *ap;
++			dbg("%d", __LINE__);
++			ap = ALLOC_ACTION(anewer);
++			xstat(arg1, &stat_anewer);
++			ap->newer_atime = stat_anewer.st_atime;
++		}
++#endif
+ #if ENABLE_FEATURE_FIND_INUM
+ 		else if (parm == PARM_inum) {
+ 			action_inum *ap;
+diff -Naur busybox-1.20.1.o/libbb/Config.src busybox-1.20.1/libbb/Config.src
+--- busybox-1.20.1.o/libbb/Config.src	2012-04-22 09:45:24.000000000 +0800
++++ busybox-1.20.1/libbb/Config.src	2012-06-01 19:32:50.726965962 +0800
+@@ -81,7 +81,7 @@
+ config FEATURE_EDITING_HISTORY
+ 	int "History size"
+ 	# Don't allow way too big values here, code uses fixed "char *history[N]" struct member
+-	range 0 9999
++	range 0 10000
+ 	default 255
+ 	depends on FEATURE_EDITING
+ 	help
+diff -Naur busybox-1.20.1.o/libbb/lineedit.c busybox-1.20.1/libbb/lineedit.c
+--- busybox-1.20.1.o/libbb/lineedit.c	2012-05-28 08:48:23.000000000 +0800
++++ busybox-1.20.1/libbb/lineedit.c	2012-06-01 20:43:42.094965962 +0800
+@@ -133,6 +133,7 @@
+ 	CHAR_T *command_ps;
+ 
+ 	const char *cmdedit_prompt;
++	int cmdedit_newlines;
+ #if ENABLE_FEATURE_EDITING_FANCY_PROMPT
+ 	int num_ok_lines; /* = 1; */
+ #endif
+@@ -172,6 +173,7 @@
+ #define command_len      (S.command_len     )
+ #define command_ps       (S.command_ps      )
+ #define cmdedit_prompt   (S.cmdedit_prompt  )
++#define cmdedit_newlines (S.cmdedit_newlines  )
+ #define num_ok_lines     (S.num_ok_lines    )
+ #define user_buf         (S.user_buf        )
+ #define home_pwd_buf     (S.home_pwd_buf    )
+@@ -195,6 +197,7 @@
+ 	/* This one is allocated only if FANCY_PROMPT is on
+ 	 * (otherwise it points to verbatim prompt (NOT malloced)) */
+ 	free((char*)cmdedit_prompt);
++	cmdedit_newlines = 0;
+ #endif
+ #if ENABLE_USERNAME_OR_HOMEDIR
+ 	free(user_buf);
+@@ -434,6 +437,7 @@
+ 	cursor = 0;
+ 	w = cmdedit_termw; /* read volatile var once */
+ 	cmdedit_y = cmdedit_prmt_len / w; /* new quasireal y */
++	cmdedit_y += cmdedit_newlines;
+ 	cmdedit_x = cmdedit_prmt_len % w;
+ }
+ 
+@@ -1753,11 +1757,19 @@
+ #define ask_terminal() ((void)0)
+ #endif
+ 
++static void cmdedit_prompt_newlines(void)
++{
++	int i;
++	for (i = 0, cmdedit_newlines = 0; cmdedit_prompt[i] != '\0'; i++)
++		if (cmdedit_prompt[i] == '\n') cmdedit_newlines++;
++}
++
+ #if !ENABLE_FEATURE_EDITING_FANCY_PROMPT
+ static void parse_and_put_prompt(const char *prmt_ptr)
+ {
+ 	cmdedit_prompt = prmt_ptr;
+ 	cmdedit_prmt_len = strlen(prmt_ptr);
++	cmdedit_prompt_newlines();
+ 	put_prompt();
+ }
+ #else
+@@ -1874,6 +1886,7 @@
+ 	if (cwd_buf != (char *)bb_msg_unknown)
+ 		free(cwd_buf);
+ 	cmdedit_prompt = prmt_mem_ptr;
++	cmdedit_prompt_newlines();
+ 	put_prompt();
+ }
+ #endif
+@@ -2121,7 +2134,7 @@
+ 		continue;
+ 
+  do_redraw:
+-		redraw(cmdedit_y, command_len - cursor);
++		redraw(cmdedit_y - cmdedit_newlines, command_len - cursor);
+ 	} /* while (1) */
+ 
+  ret:
+diff -Naur busybox-1.20.1.o/libbb/messages.c busybox-1.20.1/libbb/messages.c
+--- busybox-1.20.1.o/libbb/messages.c	2012-04-22 09:45:24.000000000 +0800
++++ busybox-1.20.1/libbb/messages.c	2012-06-01 19:00:18.304965962 +0800
+@@ -12,12 +12,7 @@
+ #define BB_ADDITIONAL_PATH ""
+ #endif
+ 
+-/* allow version to be extended, via CFLAGS */
+-#ifndef BB_EXTRA_VERSION
+-#define BB_EXTRA_VERSION BB_BT
+-#endif
+-
+-#define BANNER "BusyBox v" BB_VER " (" BB_EXTRA_VERSION ")"
++#define BANNER "BusyBox v" BB_VER
+ 
+ const char bb_banner[] ALIGN1 = BANNER;
+ 
+diff -Naur busybox-1.20.1.o/Makefile.flags busybox-1.20.1/Makefile.flags
+--- busybox-1.20.1.o/Makefile.flags	2012-04-22 09:45:23.000000000 +0800
++++ busybox-1.20.1/Makefile.flags	2012-06-01 19:00:18.304965962 +0800
+@@ -15,7 +15,7 @@
+ 	-include include/autoconf.h \
+ 	-D_GNU_SOURCE -DNDEBUG \
+ 	$(if $(CONFIG_LFS),-D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64) \
+-	-D"BB_VER=KBUILD_STR($(BB_VER))" -DBB_BT=AUTOCONF_TIMESTAMP
++	-D"BB_VER=KBUILD_STR($(BB_VER))"
+ 
+ CFLAGS += $(call cc-option,-Wall,)
+ CFLAGS += $(call cc-option,-Wshadow,)
+diff -Naur busybox-1.20.1.o/procps/pgrep.c busybox-1.20.1/procps/pgrep.c
+--- busybox-1.20.1.o/procps/pgrep.c	2012-04-22 09:45:24.000000000 +0800
++++ busybox-1.20.1/procps/pgrep.c	2012-06-01 19:00:18.304965962 +0800
+@@ -128,7 +128,7 @@
+ 		bb_show_usage();
+ 
+ 	if (argv[0])
+-		xregcomp(&re_buffer, argv[0], REG_EXTENDED | REG_NOSUB);
++		xregcomp(&re_buffer, argv[0], REG_EXTENDED);
+ 
+ 	matched_pid = 0;
+ 	cmd_last = NULL;
+diff -Naur busybox-1.20.1.o/procps/top.c busybox-1.20.1/procps/top.c
+--- busybox-1.20.1.o/procps/top.c	2012-04-22 09:45:24.000000000 +0800
++++ busybox-1.20.1/procps/top.c	2012-06-01 19:00:18.305965962 +0800
+@@ -511,7 +511,7 @@
+ 	open_read_close("loadavg", buf, sizeof(buf) - 1);
+ 	buf[sizeof(buf) - 1] = '\n';
+ 	*strchr(buf, '\n') = '\0';
+-	snprintf(scrbuf, scr_width, "Load average: %s", buf);
++	snprintf(scrbuf, scr_width, "load averages: %s", buf);
+ 	puts(scrbuf);
+ 	(*lines_rem_p)--;
+ 
+diff -Naur busybox-1.20.1.o/procps/uptime.c busybox-1.20.1/procps/uptime.c
+--- busybox-1.20.1.o/procps/uptime.c	2012-04-22 09:45:24.000000000 +0800
++++ busybox-1.20.1/procps/uptime.c	2012-06-01 19:00:18.305965962 +0800
+@@ -91,7 +91,7 @@
+ 	}
+ #endif
+ 
+-	printf(",  load average: %u.%02u, %u.%02u, %u.%02u\n",
++	printf(",  load averages: %u.%02u, %u.%02u, %u.%02u\n",
+ 			LOAD_INT(info.loads[0]), LOAD_FRAC(info.loads[0]),
+ 			LOAD_INT(info.loads[1]), LOAD_FRAC(info.loads[1]),
+ 			LOAD_INT(info.loads[2]), LOAD_FRAC(info.loads[2]));
+diff -Naur busybox-1.20.1.o/scripts/kconfig/confdata.c busybox-1.20.1/scripts/kconfig/confdata.c
+--- busybox-1.20.1.o/scripts/kconfig/confdata.c	2012-04-22 09:45:24.000000000 +0800
++++ busybox-1.20.1/scripts/kconfig/confdata.c	2012-06-01 19:00:18.305965962 +0800
+@@ -339,7 +339,7 @@
+ 	int type, l;
+ 	const char *str;
+ 	time_t now;
+-	int use_timestamp = 1;
++	int use_timestamp = 0;
+ 	char *env;
+ 
+ 	dirname[0] = 0;
+@@ -394,20 +394,7 @@
+ 		char buf[sizeof("#define AUTOCONF_TIMESTAMP "
+ 				"\"YYYY-MM-DD HH:MM:SS some_timezone\"\n")];
+ 		buf[0] = '\0';
+-		if (use_timestamp) {
+-			size_t ret = \
+-				strftime(buf, sizeof(buf), "#define AUTOCONF_TIMESTAMP "
+-					"\"%Y-%m-%d %H:%M:%S %Z\"\n", localtime(&now));
+-			/* if user has Factory timezone or some other odd install, the
+-			 * %Z above will overflow the string leaving us with undefined
+-			 * results ... so let's try again without the timezone.
+-			 */
+-			if (ret == 0)
+-				strftime(buf, sizeof(buf), "#define AUTOCONF_TIMESTAMP "
+-					"\"%Y-%m-%d %H:%M:%S\"\n", localtime(&now));
+-		} else { /* bbox */
+-			strcpy(buf, "#define AUTOCONF_TIMESTAMP \"\"\n");
+-		}
++		strcpy(buf, "#define AUTOCONF_TIMESTAMP \"\"\n");
+ 		fprintf(out_h, "/*\n"
+ 			       " * Automatically generated C config: don't edit\n"
+ 			       " * Busybox version: %s\n"
+diff -Naur busybox-1.20.1.o/shell/ash.c busybox-1.20.1/shell/ash.c
+--- busybox-1.20.1.o/shell/ash.c	2012-04-22 09:45:24.000000000 +0800
++++ busybox-1.20.1/shell/ash.c	2012-06-01 19:07:50.992965962 +0800
+@@ -1905,7 +1905,7 @@
+ 	{ VSTRFIXED|VTEXTFIXED|VUNSET, "MAILPATH"  , changemail      },
+ #endif
+ 	{ VSTRFIXED|VTEXTFIXED       , bb_PATH_root_path, changepath },
+-	{ VSTRFIXED|VTEXTFIXED       , "PS1=$ "    , NULL            },
++	{ VSTRFIXED|VTEXTFIXED       , "PS1=% "    , NULL            },
+ 	{ VSTRFIXED|VTEXTFIXED       , "PS2=> "    , NULL            },
+ 	{ VSTRFIXED|VTEXTFIXED       , "PS4=+ "    , NULL            },
+ #if ENABLE_ASH_GETOPTS
+@@ -2082,7 +2082,7 @@
+ 	 * PS1 depends on uid
+ 	 */
+ #if ENABLE_FEATURE_EDITING && ENABLE_FEATURE_EDITING_FANCY_PROMPT
+-	vps1.var_text = "PS1=\\w \\$ ";
++	vps1.var_text = "PS1=\\w \\% ";
+ #else
+ 	if (!geteuid())
+ 		vps1.var_text = "PS1=# ";

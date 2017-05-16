@@ -1,0 +1,50 @@
+#!/bin/sh
+
+[ -z "${1}" ] && exit 1
+
+case "${1}" in
+	deconfig)
+		ip -4 a f dev ${interface}
+		ip -6 a f dev ${interface}
+		ip l set ${interface} down
+		ip l set ${interface} up
+		;;
+	renew|bound)
+		ip a add ${ip}/${subnet} dev ${interface}
+
+		if [ -n "${router}" ]; then
+			while ip r del default dev ${interface} 2>/dev/null; do
+				:
+			done
+			_metric=0
+			for r in ${router}; do
+				ip r replace default via ${r} dev ${interface} metric ${_metric} 2>/dev/null
+			done
+			_metric=$(expr ${_metric} + 1)
+		fi
+
+		if [ -n "${staticroutes}" ]; then
+			_x=1
+			_y=2
+			_tmp="x"
+
+			while [ true ]; do
+				_tmp=$(echo ${staticroutes} | cut -d' ' -f${_x}-${_y})
+				[ -z "${_tmp}" ] && break
+				_net=$(echo ${_tmp} | cut -d' ' -f1)
+				[ -z "${_net}" ] && break
+				_via=$(echo ${_tmp} | cut -d' ' -f2)
+				[ -z "${_via}" ] && break
+				ip r replace ${_net} via ${_via} dev ${interface}
+				_x=$(expr ${_x} + 2); _y=$(expr ${_y} + 2)
+			done
+		fi
+
+		if [ -n "${dns}" ]; then
+			sh -c '>/etc/resolv.conf'
+			for x in ${dns}; do
+				echo nameserver ${x} >>/etc/resolv.conf
+			done
+		fi
+		;;
+esac

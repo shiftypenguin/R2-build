@@ -1,0 +1,234 @@
+--- musl-1.1.4.o/Makefile
++++ musl-1.1.4/Makefile
+@@ -51,7 +51,7 @@
+ ALL_LIBS = $(CRT_LIBS) $(STATIC_LIBS) $(SHARED_LIBS) $(EMPTY_LIBS) $(TOOL_LIBS)
+ ALL_TOOLS = tools/musl-gcc
+ 
+-LDSO_PATHNAME = $(syslibdir)/ld-musl-$(ARCH)$(SUBARCH).so.1
++LDSO_PATHNAME = $(syslibdir)/sldl
+ 
+ -include config.mak
+ 
+--- musl-1.1.4.o/arch/arm/reloc.h
++++ musl-1.1.4/arch/arm/reloc.h
+@@ -2,20 +2,6 @@
+ #include <elf.h>
+ #include <endian.h>
+ 
+-#if __BYTE_ORDER == __BIG_ENDIAN
+-#define ENDIAN_SUFFIX "eb"
+-#else
+-#define ENDIAN_SUFFIX ""
+-#endif
+-
+-#if __SOFTFP__
+-#define FP_SUFFIX ""
+-#else
+-#define FP_SUFFIX "hf"
+-#endif
+-
+-#define LDSO_ARCH "arm" ENDIAN_SUFFIX FP_SUFFIX
+-
+ #define NO_LEGACY_INITFINI
+ 
+ #define TPOFF_K 8
+--- musl-1.1.4.o/arch/i386/reloc.h
++++ musl-1.1.4/arch/i386/reloc.h
+@@ -1,8 +1,6 @@
+ #include <string.h>
+ #include <elf.h>
+ 
+-#define LDSO_ARCH "i386"
+-
+ static int remap_rel(int type)
+ {
+ 	switch(type) {
+--- musl-1.1.4.o/arch/microblaze/reloc.h
++++ musl-1.1.4/arch/microblaze/reloc.h
+@@ -2,14 +2,6 @@
+ #include <elf.h>
+ #include <endian.h>
+ 
+-#if __BYTE_ORDER == __LITTLE_ENDIAN
+-#define ENDIAN_SUFFIX "el"
+-#else
+-#define ENDIAN_SUFFIX ""
+-#endif
+-
+-#define LDSO_ARCH "microblaze" ENDIAN_SUFFIX
+-
+ #define TPOFF_K 0
+ 
+ static int remap_rel(int type)
+--- musl-1.1.4.o/arch/mips/reloc.h
++++ musl-1.1.4/arch/mips/reloc.h
+@@ -2,20 +2,6 @@
+ #include <elf.h>
+ #include <endian.h>
+ 
+-#if __BYTE_ORDER == __LITTLE_ENDIAN
+-#define ENDIAN_SUFFIX "el"
+-#else
+-#define ENDIAN_SUFFIX ""
+-#endif
+-
+-#ifdef __mips_soft_float
+-#define FP_SUFFIX "-sf"
+-#else
+-#define FP_SUFFIX ""
+-#endif
+-
+-#define LDSO_ARCH "mips" ENDIAN_SUFFIX FP_SUFFIX
+-
+ #define TPOFF_K (-0x7000)
+ 
+ static int remap_rel(int type)
+--- musl-1.1.4.o/arch/or1k/reloc.h
++++ musl-1.1.4/arch/or1k/reloc.h
+@@ -2,8 +2,6 @@
+ #include <elf.h>
+ #include <endian.h>
+ 
+-#define LDSO_ARCH "or1k"
+-
+ #define TPOFF_K 0
+ 
+ static int remap_rel(int type)
+--- musl-1.1.4.o/arch/powerpc/reloc.h
++++ musl-1.1.4/arch/powerpc/reloc.h
+@@ -1,8 +1,6 @@
+ #include <string.h>
+ #include <elf.h>
+ 
+-#define LDSO_ARCH "powerpc"
+-
+ #define TPOFF_K (-0x7000)
+ 
+ static int remap_rel(int type)
+--- musl-1.1.4.o/arch/sh/reloc.h
++++ musl-1.1.4/arch/sh/reloc.h
+@@ -1,11 +1,3 @@
+-#if __BYTE_ORDER == __BIG_ENDIAN
+-#define ENDIAN_SUFFIX "eb"
+-#else
+-#define ENDIAN_SUFFIX ""
+-#endif
+-
+-#define LDSO_ARCH "sh" ENDIAN_SUFFIX
+-
+ #define TPOFF_K 8
+ 
+ static int remap_rel(int type)
+--- musl-1.1.4.o/arch/x32/reloc.h
++++ musl-1.1.4/arch/x32/reloc.h
+@@ -2,8 +2,6 @@
+ #include <string.h>
+ #include <elf.h>
+ 
+-#define LDSO_ARCH "x32"
+-
+ /* FIXME: x32 is very strange in its use of 64-bit relocation types in
+  * a 32-bit environment. As long as the memory at reloc_addr is
+  * zero-filled prior to relocations, just treating 64-bit relocations
+--- musl-1.1.4.o/arch/x86_64/reloc.h
++++ musl-1.1.4/arch/x86_64/reloc.h
+@@ -2,8 +2,6 @@
+ #include <string.h>
+ #include <elf.h>
+ 
+-#define LDSO_ARCH "x86_64"
+-
+ static int remap_rel(int type)
+ {
+ 	switch(type) {
+--- musl-1.1.4.o/configure
++++ musl-1.1.4/configure
+@@ -219,7 +219,7 @@
+ if test "$cc_is_gcc" = yes ; then
+ wrapper=yes
+ while read line ; do
+-case "$line" in */ld-musl-*) wrapper=no ;; esac
++case "$line" in */sldl) wrapper=no ;; esac
+ done <<EOF
+ $($CC -dumpspecs)
+ EOF
+--- musl-1.1.4.o/dist/config.mak
++++ musl-1.1.4/dist/config.mak
+@@ -11,7 +11,7 @@
+ # Installation prefix for musl-gcc compiler wrapper.
+ exec_prefix = /usr/local
+ 
+-# Location for the dynamic linker ld-musl-$(ARCH).so.1
++# Location for the dynamic linker sldl
+ syslibdir = /lib
+ 
+ # Uncomment if you want to build i386 musl on a 64-bit host
+--- musl-1.1.4.o/src/ldso/dynlink.c
++++ musl-1.1.4/src/ldso/dynlink.c
+@@ -26,12 +26,14 @@
+ #ifdef SHARED
+ 
+ #if ULONG_MAX == 0xffffffff
++#define ARCH_BITS "32"
+ typedef Elf32_Ehdr Ehdr;
+ typedef Elf32_Phdr Phdr;
+ typedef Elf32_Sym Sym;
+ #define R_TYPE(x) ((x)&255)
+ #define R_SYM(x) ((x)>>8)
+ #else
++#define ARCH_BITS "64"
+ typedef Elf64_Ehdr Ehdr;
+ typedef Elf64_Phdr Phdr;
+ typedef Elf64_Sym Sym;
+@@ -129,6 +131,7 @@
+ static int ldd_mode;
+ static int ldso_fail;
+ static int noload;
++static int norpath;
+ static jmp_buf *rtld_fail;
+ static pthread_rwlock_t lock;
+ static struct debug debug;
+@@ -716,9 +719,11 @@
+ 		if (strlen(name) > NAME_MAX) return 0;
+ 		fd = -1;
+ 		if (env_path) fd = path_open(name, env_path, buf, sizeof buf);
+-		for (p=needed_by; fd < 0 && p; p=p->needed_by)
+-			if (!fixup_rpath(p, buf, sizeof buf))
+-				fd = path_open(name, p->rpath, buf, sizeof buf);
++		if (!norpath) {
++			for (p=needed_by; fd < 0 && p; p=p->needed_by)
++				if (!fixup_rpath(p, buf, sizeof buf))
++					fd = path_open(name, p->rpath, buf, sizeof buf);
++		}
+ 		if (fd < 0) {
+ 			if (!sys_path) {
+ 				char *prefix = 0;
+@@ -736,9 +741,9 @@
+ 					prefix_len = 0;
+ 				}
+ 				char etc_ldso_path[prefix_len + 1
+-					+ sizeof "/etc/ld-musl-" LDSO_ARCH ".path"];
++					+ sizeof "/etc/ld" ARCH_BITS ".path"];
+ 				snprintf(etc_ldso_path, sizeof etc_ldso_path,
+-					"%.*s/etc/ld-musl-" LDSO_ARCH ".path",
++					"%.*s/etc/ld" ARCH_BITS ".path",
+ 					(int)prefix_len, prefix);
+ 				FILE *f = fopen(etc_ldso_path, "rbe");
+ 				if (f) {
+@@ -1114,6 +1119,8 @@
+ 			env_path = argv[i]+16;
+ 		else if (!memcmp(argv[i], "LD_PRELOAD=", 11))
+ 			env_preload = argv[i]+11;
++		else if (!memcmp(argv[i], "LD_NORPATH=", 11) && argv[i][11] == '1')
++			norpath = 1;
+ 	auxv = (void *)(argv+i+1);
+ 
+ 	decode_vec(auxv, aux, AUX_CNT);
+@@ -1123,6 +1130,7 @@
+ 	  || aux[AT_GID]!=aux[AT_EGID] || aux[AT_SECURE]) {
+ 		env_path = 0;
+ 		env_preload = 0;
++		norpath = 1;
+ 		libc.secure = 1;
+ 	}
+ 	libc.page_size = aux[AT_PAGESZ];

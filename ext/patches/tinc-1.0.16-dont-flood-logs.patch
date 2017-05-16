@@ -1,0 +1,21 @@
+diff -Naur tinc-1.0.16.o/src/net_packet.c tinc-1.0.16/src/net_packet.c
+--- tinc-1.0.16.o/src/net_packet.c	2011-07-16 07:58:06.000000000 +0000
++++ tinc-1.0.16/src/net_packet.c	2013-07-23 05:10:25.861284721 +0000
+@@ -491,7 +491,7 @@
+ 		priority = origpriority;
+ 		ifdebug(TRAFFIC) logger(LOG_DEBUG, "Setting outgoing packet priority to %d", priority);
+ 		if(setsockopt(listen_socket[sock].udp, SOL_IP, IP_TOS, &priority, sizeof(priority)))	/* SO_PRIORITY doesn't seem to work */
+-			logger(LOG_ERR, "System call `%s' failed: %s", "setsockopt", strerror(errno));
++			ifdebug(TRAFFIC) logger(LOG_ERR, "System call `%s' failed: %s", "setsockopt", strerror(errno));
+ 	}
+ #endif
+ 
+@@ -502,7 +502,7 @@
+ 			if(n->mtu >= origlen)
+ 				n->mtu = origlen - 1;
+ 		} else
+-			logger(LOG_ERR, "Error sending packet to %s (%s): %s", n->name, n->hostname, sockstrerror(sockerrno));
++			ifdebug(TRAFFIC) logger(LOG_ERR, "Error sending packet to %s (%s): %s", n->name, n->hostname, sockstrerror(sockerrno));
+ 	}
+ 
+ end:

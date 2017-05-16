@@ -1,0 +1,836 @@
+diff -Naur binutils-2.17.50.0.17.o/bfd/doc/Makefile.in binutils-2.17.50.0.17/bfd/doc/Makefile.in
+--- binutils-2.17.50.0.17.o/bfd/doc/Makefile.in	2007-06-19 01:29:28.000000000 +0800
++++ binutils-2.17.50.0.17/bfd/doc/Makefile.in	2012-08-03 19:52:38.332980680 +0800
+@@ -791,7 +791,7 @@
+ 
+ # We want install to imply install-info as per GNU standards, despite the
+ # cygnus option.
+-install: install-info
++install:
+ 
+ install-html: install-html-am
+ 
+diff -Naur binutils-2.17.50.0.17.o/bfd/elfxx-target.h binutils-2.17.50.0.17/bfd/elfxx-target.h
+--- binutils-2.17.50.0.17.o/bfd/elfxx-target.h	2007-04-19 22:14:24.000000000 +0800
++++ binutils-2.17.50.0.17/bfd/elfxx-target.h	2012-08-03 19:52:38.333980680 +0800
+@@ -104,7 +104,7 @@
+ #define elf_backend_want_p_paddr_set_to_zero 0
+ #endif
+ #ifndef elf_backend_default_execstack
+-#define elf_backend_default_execstack 1
++#define elf_backend_default_execstack 0
+ #endif
+ 
+ #define bfd_elfNN_bfd_debug_info_start	bfd_void
+diff -Naur binutils-2.17.50.0.17.o/bfd/Makefile.in binutils-2.17.50.0.17/bfd/Makefile.in
+--- binutils-2.17.50.0.17.o/bfd/Makefile.in	2007-06-19 01:29:28.000000000 +0800
++++ binutils-2.17.50.0.17/bfd/Makefile.in	2012-08-03 19:52:38.333980680 +0800
+@@ -1306,7 +1306,7 @@
+ 	  | LC_COLLATE= sort > tmp.bld \
+ 	  && mv tmp.bld $(srcdir)/po/BLD-POTFILES.in
+ 
+-all diststuff: info
++diststuff: info
+ 
+ .PHONY: install-html install-html-am install-html-recursive
+ 
+diff -Naur binutils-2.17.50.0.17.o/binutils/deflex.l binutils-2.17.50.0.17/binutils/deflex.l
+--- binutils-2.17.50.0.17.o/binutils/deflex.l	2005-06-23 04:53:34.000000000 +0800
++++ binutils-2.17.50.0.17/binutils/deflex.l	2012-08-03 19:52:38.334980680 +0800
+@@ -43,7 +43,6 @@
+ "SECTIONS"	{ return SECTIONS;}
+ "EXPORTS"	{ return EXPORTS;}
+ "IMPORTS"	{ return IMPORTS;}
+-"VERSION"	{ return VERSIONK;}
+ "BASE"		{ return BASE;}
+ "CONSTANT"	{ return CONSTANT; }
+ "NONAME"	{ return NONAME; }
+diff -Naur binutils-2.17.50.0.17.o/binutils/doc/Makefile.in binutils-2.17.50.0.17/binutils/doc/Makefile.in
+--- binutils-2.17.50.0.17.o/binutils/doc/Makefile.in	2007-06-19 01:29:28.000000000 +0800
++++ binutils-2.17.50.0.17/binutils/doc/Makefile.in	2012-08-03 19:52:38.334980680 +0800
+@@ -698,7 +698,7 @@
+ 
+ # We want install to imply install-info as per GNU standards, despite the
+ # cygnus option.
+-install-data-local: install-info
++install-data-local:
+ 
+ install-html: install-html-am
+ 
+diff -Naur binutils-2.17.50.0.17.o/binutils/Makefile.in binutils-2.17.50.0.17/binutils/Makefile.in
+--- binutils-2.17.50.0.17.o/binutils/Makefile.in	2007-06-19 01:29:28.000000000 +0800
++++ binutils-2.17.50.0.17/binutils/Makefile.in	2012-08-03 19:52:38.334980680 +0800
+@@ -1094,7 +1094,6 @@
+ 	$(COMPILE) -c -DLD_NAME="\"$${ldname}\"" @NLMCONV_DEFS@ $(srcdir)/nlmconv.c
+ 
+ diststuff: $(EXTRA_DIST) info
+-all: info
+ 
+ # Targets to rebuild dependencies in this Makefile.
+ # Have to get rid of DEP1 here so that "$?" later includes all of $(CFILES).
+diff -Naur binutils-2.17.50.0.17.o/binutils/nlmheader.y binutils-2.17.50.0.17/binutils/nlmheader.y
+--- binutils-2.17.50.0.17.o/binutils/nlmheader.y	2007-05-11 23:23:20.000000000 +0800
++++ binutils-2.17.50.0.17/binutils/nlmheader.y	2012-08-03 19:52:38.334980680 +0800
+@@ -120,7 +120,7 @@
+ %token EXPORT FLAG_ON FLAG_OFF FULLMAP HELP IMPORT INPUT MAP MESSAGES
+ %token MODULE MULTIPLE OS_DOMAIN OUTPUT PSEUDOPREEMPTION REENTRANT
+ %token SCREENNAME SHARELIB STACK START SYNCHRONIZE
+-%token THREADNAME TYPE VERBOSE VERSIONK XDCDATA
++%token THREADNAME TYPE VERBOSE XDCDATA
+ 
+ /* Arguments.  */
+ 
+@@ -366,46 +366,6 @@
+ 	  {
+ 	    verbose = TRUE;
+ 	  }
+-	| VERSIONK STRING STRING STRING
+-	  {
+-	    long val;
+-
+-	    strncpy (version_hdr->stamp, "VeRsIoN#", 8);
+-	    version_hdr->majorVersion = nlmlex_get_number ($2);
+-	    val = nlmlex_get_number ($3);
+-	    if (val < 0 || val > 99)
+-	      nlmheader_warn (_("illegal minor version number (must be between 0 and 99)"),
+-			      -1);
+-	    else
+-	      version_hdr->minorVersion = val;
+-	    val = nlmlex_get_number ($4);
+-	    if (val < 0)
+-	      nlmheader_warn (_("illegal revision number (must be between 0 and 26)"),
+-			      -1);
+-	    else if (val > 26)
+-	      version_hdr->revision = 0;
+-	    else
+-	      version_hdr->revision = val;
+-	    free ($2);
+-	    free ($3);
+-	    free ($4);
+-	  }
+-	| VERSIONK STRING STRING
+-	  {
+-	    long val;
+-
+-	    strncpy (version_hdr->stamp, "VeRsIoN#", 8);
+-	    version_hdr->majorVersion = nlmlex_get_number ($2);
+-	    val = nlmlex_get_number ($3);
+-	    if (val < 0 || val > 99)
+-	      nlmheader_warn (_("illegal minor version number (must be between 0 and 99)"),
+-			      -1);
+-	    else
+-	      version_hdr->minorVersion = val;
+-	    version_hdr->revision = 0;
+-	    free ($2);
+-	    free ($3);
+-	  }
+ 	| XDCDATA STRING
+ 	  {
+ 	    rpc_file = $2;
+@@ -619,7 +579,6 @@
+   { "THREADNAME", THREADNAME },
+   { "TYPE", TYPE },
+   { "VERBOSE", VERBOSE },
+-  { "VERSION", VERSIONK },
+   { "XDCDATA", XDCDATA }
+ };
+ 
+diff -Naur binutils-2.17.50.0.17.o/binutils/rclex.c binutils-2.17.50.0.17/binutils/rclex.c
+--- binutils-2.17.50.0.17.o/binutils/rclex.c	2007-06-19 01:29:28.000000000 +0800
++++ binutils-2.17.50.0.17/binutils/rclex.c	2012-08-03 19:52:38.335980680 +0800
+@@ -102,7 +102,7 @@
+   K(STRINGTABLE), K(STYLE),
+   K(TOOLBAR),
+   K(USERBUTTON),
+-  K(VALUE), { "VERSION", VERSIONK }, K(VERSIONINFO),
++  K(VALUE), K(VERSIONINFO),
+   K(VIRTKEY), K(VXD),
+   { NULL, 0 },
+ };
+diff -Naur binutils-2.17.50.0.17.o/etc/Makefile.in binutils-2.17.50.0.17/etc/Makefile.in
+--- binutils-2.17.50.0.17.o/etc/Makefile.in	2007-04-19 22:14:24.000000000 +0800
++++ binutils-2.17.50.0.17/etc/Makefile.in	2012-08-03 19:52:38.335980680 +0800
+@@ -63,8 +63,8 @@
+ PDFFILES = standards.pdf configure.pdf
+ HTMLFILES = standards.html configure.html
+ 
+-all: info
+-install: install-info
++all:
++install:
+ 
+ uninstall:
+ 
+diff -Naur binutils-2.17.50.0.17.o/gas/config/obj-coff.c binutils-2.17.50.0.17/gas/config/obj-coff.c
+--- binutils-2.17.50.0.17.o/gas/config/obj-coff.c	2006-04-30 00:32:57.000000000 +0800
++++ binutils-2.17.50.0.17/gas/config/obj-coff.c	2012-08-03 19:52:38.335980680 +0800
+@@ -473,34 +473,6 @@
+   add_lineno (frag_now, frag_now_fix (), lineno);
+ }
+ 
+-/* Handle the .ident pseudo-op.  */
+-
+-static void
+-obj_coff_ident (int ignore ATTRIBUTE_UNUSED)
+-{
+-  segT current_seg = now_seg;
+-  subsegT current_subseg = now_subseg;
+-
+-#ifdef TE_PE
+-  {
+-    segT sec;
+-
+-    /* We could put it in .comment, but that creates an extra section
+-       that shouldn't be loaded into memory, which requires linker
+-       changes...  For now, until proven otherwise, use .rdata.  */
+-    sec = subseg_new (".rdata$zzz", 0);
+-    bfd_set_section_flags (stdoutput, sec,
+-			   ((SEC_ALLOC | SEC_LOAD | SEC_READONLY | SEC_DATA)
+-			    & bfd_applicable_section_flags (stdoutput)));
+-  }
+-#else
+-  subseg_new (".comment", 0);
+-#endif
+-
+-  stringer (1);
+-  subseg_set (current_seg, current_subseg);
+-}
+-
+ /* Handle .def directives.
+ 
+    One might ask : why can't we symbol_new if the symbol does not
+@@ -1782,7 +1754,6 @@
+   {"def", obj_coff_def, 0},
+   {"dim", obj_coff_dim, 0},
+   {"endef", obj_coff_endef, 0},
+-  {"ident", obj_coff_ident, 0},
+   {"line", obj_coff_line, 0},
+   {"ln", obj_coff_ln, 0},
+   {"scl", obj_coff_scl, 0},
+diff -Naur binutils-2.17.50.0.17.o/gas/config/obj-elf.c binutils-2.17.50.0.17/gas/config/obj-elf.c
+--- binutils-2.17.50.0.17.o/gas/config/obj-elf.c	2007-06-19 01:31:40.000000000 +0800
++++ binutils-2.17.50.0.17/gas/config/obj-elf.c	2012-08-03 19:52:38.336980680 +0800
+@@ -64,11 +64,9 @@
+ static void obj_elf_line (int);
+ static void obj_elf_size (int);
+ static void obj_elf_type (int);
+-static void obj_elf_ident (int);
+ static void obj_elf_weak (int);
+ static void obj_elf_local (int);
+ static void obj_elf_visibility (int);
+-static void obj_elf_symver (int);
+ static void obj_elf_subsection (int);
+ static void obj_elf_popsection (int);
+ static void obj_elf_tls_common (int);
+@@ -80,7 +78,6 @@
+ {
+   {"comm", obj_elf_common, 0},
+   {"common", obj_elf_common, 1},
+-  {"ident", obj_elf_ident, 0},
+   {"lcomm", obj_elf_lcomm, 0},
+   {"local", obj_elf_local, 0},
+   {"previous", obj_elf_previous, 0},
+@@ -92,7 +89,6 @@
+   {"popsection", obj_elf_popsection, 0},
+   {"size", obj_elf_size, 0},
+   {"type", obj_elf_type, 0},
+-  {"version", obj_elf_version, 0},
+   {"weak", obj_elf_weak, 0},
+ 
+   /* These define symbol visibility.  */
+@@ -103,9 +99,6 @@
+   /* These are used for stabs-in-elf configurations.  */
+   {"line", obj_elf_line, 0},
+ 
+-  /* This is a GNU extension to handle symbol versions.  */
+-  {"symver", obj_elf_symver, 0},
+-
+   /* A GNU extension to change subsection only.  */
+   {"subsection", obj_elf_subsection, 0},
+ 
+@@ -1220,78 +1213,6 @@
+   demand_empty_rest_of_line ();
+ }
+ 
+-/* This handles the .symver pseudo-op, which is used to specify a
+-   symbol version.  The syntax is ``.symver NAME,SYMVERNAME''.
+-   SYMVERNAME may contain ELF_VER_CHR ('@') characters.  This
+-   pseudo-op causes the assembler to emit a symbol named SYMVERNAME
+-   with the same value as the symbol NAME.  */
+-
+-static void
+-obj_elf_symver (int ignore ATTRIBUTE_UNUSED)
+-{
+-  char *name;
+-  char c;
+-  char old_lexat;
+-  symbolS *sym;
+-
+-  name = input_line_pointer;
+-  c = get_symbol_end ();
+-
+-  sym = symbol_find_or_make (name);
+-
+-  *input_line_pointer = c;
+-
+-  SKIP_WHITESPACE ();
+-  if (*input_line_pointer != ',')
+-    {
+-      as_bad (_("expected comma after name in .symver"));
+-      ignore_rest_of_line ();
+-      return;
+-    }
+-
+-  ++input_line_pointer;
+-  SKIP_WHITESPACE ();
+-  name = input_line_pointer;
+-
+-  /* Temporarily include '@' in symbol names.  */
+-  old_lexat = lex_type[(unsigned char) '@'];
+-  lex_type[(unsigned char) '@'] |= LEX_NAME;
+-  c = get_symbol_end ();
+-  lex_type[(unsigned char) '@'] = old_lexat;
+-
+-  if (symbol_get_obj (sym)->versioned_name == NULL)
+-    {
+-      symbol_get_obj (sym)->versioned_name = xstrdup (name);
+-
+-      *input_line_pointer = c;
+-
+-      if (strchr (symbol_get_obj (sym)->versioned_name,
+-		  ELF_VER_CHR) == NULL)
+-	{
+-	  as_bad (_("missing version name in `%s' for symbol `%s'"),
+-		  symbol_get_obj (sym)->versioned_name,
+-		  S_GET_NAME (sym));
+-	  ignore_rest_of_line ();
+-	  return;
+-	}
+-    }
+-  else
+-    {
+-      if (strcmp (symbol_get_obj (sym)->versioned_name, name))
+-	{
+-	  as_bad (_("multiple versions [`%s'|`%s'] for symbol `%s'"),
+-		  name, symbol_get_obj (sym)->versioned_name,
+-		  S_GET_NAME (sym));
+-	  ignore_rest_of_line ();
+-	  return;
+-	}
+-
+-      *input_line_pointer = c;
+-    }
+-
+-  demand_empty_rest_of_line ();
+-}
+-
+ /* This handles the .vtable_inherit pseudo-op, which is used to indicate
+    to the linker the hierarchy in which a particular table resides.  The
+    syntax is ".vtable_inherit CHILDNAME, PARENTNAME".  */
+@@ -1454,66 +1375,6 @@
+ 		      | (S_GET_OTHER (src) & ~ELF_ST_VISIBILITY (-1))));
+ }
+ 
+-void
+-obj_elf_version (int ignore ATTRIBUTE_UNUSED)
+-{
+-  char *name;
+-  unsigned int c;
+-  char *p;
+-  asection *seg = now_seg;
+-  subsegT subseg = now_subseg;
+-  Elf_Internal_Note i_note;
+-  Elf_External_Note e_note;
+-  asection *note_secp = NULL;
+-
+-  SKIP_WHITESPACE ();
+-  if (*input_line_pointer == '\"')
+-    {
+-      unsigned int len;
+-
+-      ++input_line_pointer;	/* -> 1st char of string.  */
+-      name = input_line_pointer;
+-
+-      while (is_a_char (c = next_char_of_string ()))
+-	;
+-      c = *input_line_pointer;
+-      *input_line_pointer = '\0';
+-      *(input_line_pointer - 1) = '\0';
+-      *input_line_pointer = c;
+-
+-      /* Create the .note section.  */
+-      note_secp = subseg_new (".note", 0);
+-      bfd_set_section_flags (stdoutput,
+-			     note_secp,
+-			     SEC_HAS_CONTENTS | SEC_READONLY);
+-
+-      /* Process the version string.  */
+-      len = strlen (name) + 1;
+-
+-      /* PR 3456: Although the name field is padded out to an 4-byte
+-	 boundary, the namesz field should not be adjusted.  */
+-      i_note.namesz = len;
+-      i_note.descsz = 0;	/* No description.  */
+-      i_note.type = NT_VERSION;
+-      p = frag_more (sizeof (e_note.namesz));
+-      md_number_to_chars (p, i_note.namesz, sizeof (e_note.namesz));
+-      p = frag_more (sizeof (e_note.descsz));
+-      md_number_to_chars (p, i_note.descsz, sizeof (e_note.descsz));
+-      p = frag_more (sizeof (e_note.type));
+-      md_number_to_chars (p, i_note.type, sizeof (e_note.type));
+-      p = frag_more (len);
+-      memcpy (p, name, len);
+-
+-      frag_align (2, 0, 0);
+-
+-      subseg_set (seg, subseg);
+-    }
+-  else
+-    as_bad (_("expected quoted string"));
+-
+-  demand_empty_rest_of_line ();
+-}
+-
+ static void
+ obj_elf_size (int ignore ATTRIBUTE_UNUSED)
+ {
+@@ -1637,32 +1498,6 @@
+   demand_empty_rest_of_line ();
+ }
+ 
+-static void
+-obj_elf_ident (int ignore ATTRIBUTE_UNUSED)
+-{
+-  static segT comment_section;
+-  segT old_section = now_seg;
+-  int old_subsection = now_subseg;
+-
+-#ifdef md_flush_pending_output
+-  md_flush_pending_output ();
+-#endif
+-
+-  if (!comment_section)
+-    {
+-      char *p;
+-      comment_section = subseg_new (".comment", 0);
+-      bfd_set_section_flags (stdoutput, comment_section,
+-			     SEC_READONLY | SEC_HAS_CONTENTS);
+-      p = frag_more (1);
+-      *p = 0;
+-    }
+-  else
+-    subseg_set (comment_section, 0);
+-  stringer (1);
+-  subseg_set (old_section, old_subsection);
+-}
+-
+ #ifdef INIT_STAB_SECTION
+ 
+ /* The first entry in a .stabs section is special.  */
+diff -Naur binutils-2.17.50.0.17.o/gas/doc/Makefile.in binutils-2.17.50.0.17/gas/doc/Makefile.in
+--- binutils-2.17.50.0.17.o/gas/doc/Makefile.in	2007-06-19 01:29:28.000000000 +0800
++++ binutils-2.17.50.0.17/gas/doc/Makefile.in	2012-08-03 19:52:38.336980680 +0800
+@@ -604,7 +604,7 @@
+ 
+ # We want install to imply install-info as per GNU standards, despite the
+ # cygnus option.
+-install-data-local: install-info
++install-data-local:
+ 
+ install-html: install-html-am
+ 
+diff -Naur binutils-2.17.50.0.17.o/gas/Makefile.in binutils-2.17.50.0.17/gas/Makefile.in
+--- binutils-2.17.50.0.17.o/gas/Makefile.in	2007-06-19 01:29:28.000000000 +0800
++++ binutils-2.17.50.0.17/gas/Makefile.in	2012-08-03 19:52:38.337980680 +0800
+@@ -2489,7 +2489,6 @@
+ 	  && mv tmp $(srcdir)/po/POTFILES.in
+ 
+ diststuff: $(EXTRA_DIST) info
+-all: info
+ 
+ # Stuff that every object file depends upon.  If anything is removed
+ # from this list, remove it from dep-in.sed as well.
+diff -Naur binutils-2.17.50.0.17.o/gprof/Makefile.in binutils-2.17.50.0.17/gprof/Makefile.in
+--- binutils-2.17.50.0.17.o/gprof/Makefile.in	2007-06-19 01:29:29.000000000 +0800
++++ binutils-2.17.50.0.17/gprof/Makefile.in	2012-08-03 19:52:38.337980680 +0800
+@@ -889,7 +889,7 @@
+ 
+ # We want install to imply install-info as per GNU standards, despite the
+ # cygnus option.
+-install-data-local: install-info
++install-data-local:
+ 
+ # Targets to rebuild dependencies in this Makefile.
+ # Have to get rid of DEP1 here so that "$?" later includes all sources.
+diff -Naur binutils-2.17.50.0.17.o/ld/deffilep.y binutils-2.17.50.0.17/ld/deffilep.y
+--- binutils-2.17.50.0.17.o/ld/deffilep.y	2007-05-11 23:23:20.000000000 +0800
++++ binutils-2.17.50.0.17/ld/deffilep.y	2012-08-03 19:52:38.337980680 +0800
+@@ -104,7 +104,7 @@
+ };
+ 
+ %token NAME LIBRARY DESCRIPTION STACKSIZE HEAPSIZE CODE DATAU DATAL
+-%token SECTIONS EXPORTS IMPORTS VERSIONK BASE CONSTANTU CONSTANTL
++%token SECTIONS EXPORTS IMPORTS BASE CONSTANTU CONSTANTL
+ %token PRIVATEU PRIVATEL
+ %token READ WRITE EXECUTE SHARED NONAMEU NONAMEL DIRECTIVE
+ %token <id> ID
+@@ -130,8 +130,6 @@
+ 	|	SECTIONS seclist
+ 	|	EXPORTS explist 
+ 	|	IMPORTS implist
+-	|	VERSIONK NUMBER { def_version ($2, 0);}
+-	|	VERSIONK NUMBER '.' NUMBER { def_version ($2, $4);}
+ 	|	DIRECTIVE ID { def_directive ($2);}
+ 	;
+ 
+@@ -894,7 +892,6 @@
+   { "SEGMENTS", SECTIONS },
+   { "SHARED", SHARED },
+   { "STACKSIZE", STACKSIZE },
+-  { "VERSION", VERSIONK },
+   { "WRITE", WRITE },
+   { 0, 0 }
+ };
+diff -Naur binutils-2.17.50.0.17.o/ld/ldfile.c binutils-2.17.50.0.17/ld/ldfile.c
+--- binutils-2.17.50.0.17.o/ld/ldfile.c	2007-05-11 23:23:20.000000000 +0800
++++ binutils-2.17.50.0.17/ld/ldfile.c	2012-08-03 19:50:17.346980680 +0800
+@@ -235,8 +235,6 @@
+ 			  break;
+ 			case NAME:
+ 			case LNAME:
+-			case VERS_IDENTIFIER:
+-			case VERS_TAG:
+ 			  free (yylval.name);
+ 			  break;
+ 			case INT:
+diff -Naur binutils-2.17.50.0.17.o/ld/ldgram.y binutils-2.17.50.0.17/ld/ldgram.y
+--- binutils-2.17.50.0.17.o/ld/ldgram.y	2007-06-19 01:29:29.000000000 +0800
++++ binutils-2.17.50.0.17/ld/ldgram.y	2012-08-03 19:47:54.496980680 +0800
+@@ -147,14 +147,10 @@
+ %token CHIP LIST SECT ABSOLUTE  LOAD NEWLINE ENDWORD ORDER NAMEWORD ASSERT_K
+ %token FORMAT PUBLIC DEFSYMEND BASE ALIAS TRUNCATE REL
+ %token INPUT_SCRIPT INPUT_MRI_SCRIPT INPUT_DEFSYM CASE EXTERN START
+-%token <name> VERS_TAG VERS_IDENTIFIER
+-%token GLOBAL LOCAL VERSIONK INPUT_VERSION_SCRIPT
++%token GLOBAL LOCAL
+ %token KEEP ONLY_IF_RO ONLY_IF_RW SPECIAL
+ %token EXCLUDE_FILE
+ %token CONSTANT
+-%type <versyms> vers_defns
+-%type <versnode> vers_tag
+-%type <deflist> verdep
+ %token INPUT_DYNAMIC_LIST
+ 
+ %%
+@@ -162,7 +158,6 @@
+ file:
+ 		INPUT_SCRIPT script_file
+ 	|	INPUT_MRI_SCRIPT mri_script_file
+-	|	INPUT_VERSION_SCRIPT version_script_file
+ 	|	INPUT_DYNAMIC_LIST dynamic_list_file
+ 	|	INPUT_DEFSYM defsym_expr
+ 	;
+@@ -316,7 +311,6 @@
+ 	|	low_level_library
+ 	|	floating_point_support
+ 	|	statement_anywhere
+-	|	version
+         |	 ';'
+ 	|	TARGET_K '(' NAME ')'
+ 		{ lang_add_target($3); }
+@@ -1165,156 +1159,7 @@
+ 	;
+ 
+ dynamic_list_tag:
+-		vers_defns ';'
+-		{
+-		  lang_append_dynamic_list ($1);
+-		}
+-	;
+-
+-/* This syntax is used within an external version script file.  */
+-
+-version_script_file:
+-		{
+-		  ldlex_version_file ();
+-		  PUSH_ERROR (_("VERSION script"));
+-		}
+-		vers_nodes
+-		{
+-		  ldlex_popstate ();
+-		  POP_ERROR ();
+-		}
+-	;
+-
+-/* This is used within a normal linker script file.  */
+-
+-version:
+-		{
+-		  ldlex_version_script ();
+-		}
+-		VERSIONK '{' vers_nodes '}'
+-		{
+-		  ldlex_popstate ();
+-		}
+-	;
+-
+-vers_nodes:
+-		vers_node
+-	|	vers_nodes vers_node
+-	;
+-
+-vers_node:
+-		'{' vers_tag '}' ';'
+-		{
+-		  lang_register_vers_node (NULL, $2, NULL);
+-		}
+-	|	VERS_TAG '{' vers_tag '}' ';'
+-		{
+-		  lang_register_vers_node ($1, $3, NULL);
+-		}
+-	|	VERS_TAG '{' vers_tag '}' verdep ';'
+-		{
+-		  lang_register_vers_node ($1, $3, $5);
+-		}
+-	;
+-
+-verdep:
+-		VERS_TAG
+-		{
+-		  $$ = lang_add_vers_depend (NULL, $1);
+-		}
+-	|	verdep VERS_TAG
+-		{
+-		  $$ = lang_add_vers_depend ($1, $2);
+-		}
+-	;
+-
+-vers_tag:
+-		/* empty */
+-		{
+-		  $$ = lang_new_vers_node (NULL, NULL);
+-		}
+-	|	vers_defns ';'
+-		{
+-		  $$ = lang_new_vers_node ($1, NULL);
+-		}
+-	|	GLOBAL ':' vers_defns ';'
+-		{
+-		  $$ = lang_new_vers_node ($3, NULL);
+-		}
+-	|	LOCAL ':' vers_defns ';'
+-		{
+-		  $$ = lang_new_vers_node (NULL, $3);
+-		}
+-	|	GLOBAL ':' vers_defns ';' LOCAL ':' vers_defns ';'
+-		{
+-		  $$ = lang_new_vers_node ($3, $7);
+-		}
+-	;
+-
+-vers_defns:
+-		VERS_IDENTIFIER
+-		{
+-		  $$ = lang_new_vers_pattern (NULL, $1, ldgram_vers_current_lang, FALSE);
+-		}
+-        |       NAME
+-		{
+-		  $$ = lang_new_vers_pattern (NULL, $1, ldgram_vers_current_lang, TRUE);
+-		}
+-	|	vers_defns ';' VERS_IDENTIFIER
+-		{
+-		  $$ = lang_new_vers_pattern ($1, $3, ldgram_vers_current_lang, FALSE);
+-		}
+-	|	vers_defns ';' NAME
+-		{
+-		  $$ = lang_new_vers_pattern ($1, $3, ldgram_vers_current_lang, TRUE);
+-		}
+-	|	vers_defns ';' EXTERN NAME '{'
+-			{
+-			  $<name>$ = ldgram_vers_current_lang;
+-			  ldgram_vers_current_lang = $4;
+-			}
+-		vers_defns opt_semicolon '}'
+-			{
+-			  struct bfd_elf_version_expr *pat;
+-			  for (pat = $7; pat->next != NULL; pat = pat->next);
+-			  pat->next = $1;
+-			  $$ = $7;
+-			  ldgram_vers_current_lang = $<name>6;
+-			}
+-	|	EXTERN NAME '{'
+-			{
+-			  $<name>$ = ldgram_vers_current_lang;
+-			  ldgram_vers_current_lang = $2;
+-			}
+-		vers_defns opt_semicolon '}'
+-			{
+-			  $$ = $5;
+-			  ldgram_vers_current_lang = $<name>4;
+-			}
+-	|	GLOBAL
+-		{
+-		  $$ = lang_new_vers_pattern (NULL, "global", ldgram_vers_current_lang, FALSE);
+-		}
+-	|	vers_defns ';' GLOBAL
+-		{
+-		  $$ = lang_new_vers_pattern ($1, "global", ldgram_vers_current_lang, FALSE);
+-		}
+-	|	LOCAL
+-		{
+-		  $$ = lang_new_vers_pattern (NULL, "local", ldgram_vers_current_lang, FALSE);
+-		}
+-	|	vers_defns ';' LOCAL
+-		{
+-		  $$ = lang_new_vers_pattern ($1, "local", ldgram_vers_current_lang, FALSE);
+-		}
+-	|	EXTERN
+-		{
+-		  $$ = lang_new_vers_pattern (NULL, "extern", ldgram_vers_current_lang, FALSE);
+-		}
+-	|	vers_defns ';' EXTERN
+-		{
+-		  $$ = lang_new_vers_pattern ($1, "extern", ldgram_vers_current_lang, FALSE);
+-		}
++	|	';'
+ 	;
+ 
+ opt_semicolon:
+diff -Naur binutils-2.17.50.0.17.o/ld/ldlex.h binutils-2.17.50.0.17/ld/ldlex.h
+--- binutils-2.17.50.0.17.o/ld/ldlex.h	2006-09-24 23:19:58.000000000 +0800
++++ binutils-2.17.50.0.17/ld/ldlex.h	2012-08-03 19:52:38.338980680 +0800
+@@ -29,7 +29,6 @@
+   input_selected,		/* We've set the initial state.  */
+   input_script,
+   input_mri_script,
+-  input_version_script,
+   input_dynamic_list,
+   input_defsym
+ } input_type;
+diff -Naur binutils-2.17.50.0.17.o/ld/ldlex.l binutils-2.17.50.0.17/ld/ldlex.l
+--- binutils-2.17.50.0.17.o/ld/ldlex.l	2007-06-19 01:29:29.000000000 +0800
++++ binutils-2.17.50.0.17/ld/ldlex.l	2012-08-03 19:49:52.664980680 +0800
+@@ -129,7 +129,6 @@
+ 	{
+ 	case input_script: return INPUT_SCRIPT; break;
+ 	case input_mri_script: return INPUT_MRI_SCRIPT; break;
+-	case input_version_script: return INPUT_VERSION_SCRIPT; break;
+ 	case input_dynamic_list: return INPUT_DYNAMIC_LIST; break;
+ 	case input_defsym: return INPUT_DEFSYM; break;
+ 	default: abort ();
+@@ -244,7 +243,6 @@
+ <BOTH,SCRIPT,EXPRESSION,MRI>";"		{ RTOKEN(';');}
+ <BOTH,SCRIPT>"MEMORY"			{ RTOKEN(MEMORY);}
+ <BOTH,SCRIPT,EXPRESSION>"ORIGIN"	{ RTOKEN(ORIGIN);}
+-<BOTH,SCRIPT>"VERSION"			{ RTOKEN(VERSIONK);}
+ <EXPRESSION,BOTH,SCRIPT>"BLOCK"		{ RTOKEN(BLOCK);}
+ <EXPRESSION,BOTH,SCRIPT>"BIND"		{ RTOKEN(BIND);}
+ <BOTH,SCRIPT,EXPRESSION>"LENGTH"	{ RTOKEN(LENGTH);}
+@@ -406,39 +404,6 @@
+ <BOTH,SCRIPT,EXPRESSION>"\n"		{ lineno++;}
+ <MRI,BOTH,SCRIPT,EXPRESSION>[ \t\r]+	{ }
+ 
+-<VERS_NODE,VERS_SCRIPT>[:,;]	{ return *yytext; }
+-
+-<VERS_NODE>global		{ RTOKEN(GLOBAL); }
+-
+-<VERS_NODE>local		{ RTOKEN(LOCAL); }
+-
+-<VERS_NODE>extern		{ RTOKEN(EXTERN); }
+-
+-<VERS_NODE>{V_IDENTIFIER}	{ yylval.name = xstrdup (yytext);
+-				  return VERS_IDENTIFIER; }
+-
+-<VERS_SCRIPT>{V_TAG}		{ yylval.name = xstrdup (yytext);
+-				  return VERS_TAG; }
+-
+-<VERS_START>"{"			{ BEGIN(VERS_SCRIPT); return *yytext; }
+-
+-<VERS_SCRIPT>"{"		{ BEGIN(VERS_NODE);
+-				  vers_node_nesting = 0;
+-				  return *yytext;
+-				}
+-<VERS_SCRIPT>"}"		{ return *yytext; }
+-<VERS_NODE>"{"			{ vers_node_nesting++; return *yytext; }
+-<VERS_NODE>"}"			{ if (--vers_node_nesting < 0)
+-				    BEGIN(VERS_SCRIPT);
+-				  return *yytext;
+-				}
+-
+-<VERS_START,VERS_NODE,VERS_SCRIPT>[\n]		{ lineno++; }
+-
+-<VERS_START,VERS_NODE,VERS_SCRIPT>#.*		{ /* Eat up comments */ }
+-
+-<VERS_START,VERS_NODE,VERS_SCRIPT>[ \t\r]+   	{ /* Eat up whitespace */ }
+-
+ <<EOF>> {
+   include_stack_ptr--;
+ 
+diff -Naur binutils-2.17.50.0.17.o/ld/ldmain.c binutils-2.17.50.0.17/ld/ldmain.c
+--- binutils-2.17.50.0.17.o/ld/ldmain.c	2007-06-19 01:31:40.000000000 +0800
++++ binutils-2.17.50.0.17/ld/ldmain.c	2012-08-03 19:59:26.658980680 +0800
+@@ -281,6 +281,8 @@
+   link_info.pei386_auto_import = -1;
+   link_info.spare_dynamic_tags = 5;
+   link_info.sharable_sections = FALSE;
++  link_info.execstack = FALSE;
++  link_info.noexecstack = TRUE;
+ 
+   ldfile_add_arch ("");
+   emulation = get_emulation (argc, argv);
+diff -Naur binutils-2.17.50.0.17.o/ld/lexsup.c binutils-2.17.50.0.17/ld/lexsup.c
+--- binutils-2.17.50.0.17.o/ld/lexsup.c	2007-05-11 23:23:20.000000000 +0800
++++ binutils-2.17.50.0.17/ld/lexsup.c	2012-08-03 19:52:38.338980680 +0800
+@@ -107,7 +107,6 @@
+   OPTION_UR,
+   OPTION_VERBOSE,
+   OPTION_VERSION,
+-  OPTION_VERSION_SCRIPT,
+   OPTION_VERSION_EXPORTS_SECTION,
+   OPTION_DYNAMIC_LIST,
+   OPTION_DYNAMIC_LIST_CPP_NEW,
+@@ -512,8 +511,6 @@
+     '\0', NULL, N_("Output lots of information during link"), TWO_DASHES },
+   { {"dll-verbose", no_argument, NULL, OPTION_VERBOSE}, /* Linux.  */
+     '\0', NULL, NULL, NO_HELP },
+-  { {"version-script", required_argument, NULL, OPTION_VERSION_SCRIPT },
+-    '\0', N_("FILE"), N_("Read version information script"), TWO_DASHES },
+   { {"version-exports-section", required_argument, NULL,
+      OPTION_VERSION_EXPORTS_SECTION },
+     '\0', N_("SYMBOL"), N_("Take export symbols list from .exports, using\n"
+@@ -1251,20 +1248,6 @@
+ 	  ldversion (2);
+ 	  xexit (0);
+ 	  break;
+-	case OPTION_VERSION_SCRIPT:
+-	  /* This option indicates a small script that only specifies
+-	     version information.  Read it, but don't assume that
+-	     we've seen a linker script.  */
+-	  {
+-	    FILE *hold_script_handle;
+-
+-	    hold_script_handle = saved_script_handle;
+-	    ldfile_open_command_file (optarg);
+-	    saved_script_handle = hold_script_handle;
+-	    parser_input = input_version_script;
+-	    yyparse ();
+-	  }
+-	  break;
+ 	case OPTION_VERSION_EXPORTS_SECTION:
+ 	  /* This option records a version symbol to be applied to the
+ 	     symbols listed for export to be found in the object files
+diff -Naur binutils-2.17.50.0.17.o/ld/Makefile.in binutils-2.17.50.0.17/ld/Makefile.in
+--- binutils-2.17.50.0.17.o/ld/Makefile.in	2007-06-19 01:29:29.000000000 +0800
++++ binutils-2.17.50.0.17/ld/Makefile.in	2012-08-03 19:52:38.339980680 +0800
+@@ -2678,9 +2678,9 @@
+ 
+ # We want install to imply install-info as per GNU standards, despite the
+ # cygnus option.
+-install-data-local: install-info
++install-data-local:
+ diststuff: info $(EXTRA_DIST)
+-all: info ld.1
++all: ld.1
+ 
+ # Both info (ld.info) and ld.1 depend on configdoc.texi.
+ # But info isn't a direct target. Make info-recursive to depend on

@@ -1,0 +1,117 @@
+R2, simple build scripts for minimal Linux.
+
+these build scripts bootstrap a new system that has:
+- a working kernel (mostly on x86 systems)
+- compiler, assembler, linker, make
+- very small and efficient musl C library
+- compatible shell (busybox ash) and basic standard programs
+- minimal init (uinit) and support scripts
+- well known LILO bootloader (only on x86 systems)
+- ip/ss for network interface management
+- e2fsprogs to maintain and repair ext2/3/4 filesystems
+- old OpenBSD lex/m4/yacc
+
+These scripts only bootstrap a minimal environment that will just boot and run.
+
+Supported architectures for now:
+- ix86 (32 bits)
+- x86_64
+- arm32
+- mipsel
+- mips
+
+Kernel build is supported only on x86 arches.
+
+Some archs (mostly embedded) lack shared library support due to toolchain issues. I do not want to fix this. Really. They work without shared libs quite well and size is not an issue because musl libc has well separated internal structure.
+
+Ext* scripts build additional things such as embedded SSH server, zlib/bzip2 and iptables.
+
+If you want to rebuild system from itself entirely, you probably will need gpl2 versions of sed and patch.
+- busybox patch has problems with not pure/out of order patch series to apply, it simply refuses them
+- busybox sed fails to apply cleanly when building Linux kernel
+Run corresponding ext scripts to cross compile them for your target
+You also will need oport goods installed (m4/lex/yacc), or their GNU equivalents. By default, they're already built in R2. Note that oport is not enough to build, for example, certain X11 parts. Especially you will need a recent flex.
+
+There are additional variants to build: mini and micro. Mini builds everything without build toolchain
+embedded into rootfs while micro build just programs needed to boot. You can always extend result by
+running build_* scripts manually.
+Another variant is chroot. It builds only a rootfs which can be chrooted into, without boot time programs.
+
+You also can build minird and ramboot initrd images. They are very useful for rescuing existing installations!
+
+Configuration:
+
+To build your system, you must first create config.sh, which is just a file defining this variables:
+Required variables:
+TARGET= # target system specification understood by gcc, binutils etc. Good example is something like "i486-linux".
+CROSSDIR= # FULL path where to put cross compiler binaries
+CROSSBUILDDIR= # path where to put cross compiler object files during building
+ROOTDIR= # FULL path where to put result target root tree
+BUILDDIR= # path where to put all object files during building of root tree
+Optional variables:
+NOKERN= # set to 1 if you want to disable building kernel for that arch
+BUILD= # override build system spec if gcc goes mad when building for same arch,
+    recommended to set to something other than TARGET when host and target archs are same.
+GCC_EXTRA= # set this if you need to pass additional configure flags to gcc
+ALL_STATIC= # set to 1 if you want target statically linked rootfs
+BUSYBOX_CONFIG= # sets alternative busybox config file name. Must reside in pkg directory.
+LINUX_CONFIG= # sets alternative Linux kernel config file name. Must reside in pkg directory.
+STRIP_RESULT= # set to 1 to run strip -pg on all root binaries, or to S to strip -ps on all root binaries
+TOUCH_RESULT= # set to 1 to update all root binaries mtime to current date, or to command line args passed to touch
+MAKEOPTS= # pass this to make as command line arguments
+
+If you want to build full system capable of rebuilding itself, create a config.sh, then
+- run cross_all.sh to build cross compiling toolchain
+- run build_all.sh to build target root system (possibly with kernel)
+- run ext_patch.sh and ext_gsed.sh scripts
+
+If you want to build just a bootable, networked system, then instead of build_all.sh of full system run build_mini.sh.
+For micro variant that builds just programs needed to local boot, run build_micro.sh. Omit sed and patch mentioned previously.
+
+Parts of that scripts (especially ext) are taken from https://github.com/rofl0r/sabotage
+
+DIFFERENCES
+
+Most Linux systems ship shared libraries. R2 is different in this area. You can get a working system without shared libs at all.
+
+There are many patches. They're essential, especially for supporting building on newer systems.
+
+The system is incompatible with common Linux systems. Do NOT ask me to fix this! This is intentional. Certain features are removed, certain paths are changed. If you dislike that - go away.
+
+musl:
+- Shared library dynamic loader path is set to /lib/sldl on all architectures
+- Skein1024 crypt() added to all standard Linux crypt()'s (prefix: "$U$")
+- LD_NORPATH=1 environment variable disables RPATH ELF feature during dynamic linking
+- /usr is replaced with /local from certain standard paths inside a C library
+- syslog() includes full 4 digit year into date stamp
+
+busybox:
+- replaced "Load average" by "load averages"
+- ash: replaced '$' with '%' in default PS1
+- syslogd: include full 4 digit year into date stamp
+- removed build date to get exact same binaries
+
+binutils:
+- ld: set noexec stack by default
+- removing and eliminating version scripts
+- as: remove support for ".ident"
+- as: remove support for ".symver"
+- default dynamic linker paths are changed to /lib/sldl and /lib32/sldl on all archs
+
+gcc:
+- removing unneeded crtbegin/crtend from base C compiler installation
+- removed .comment section inclusion at all (do not embed GCC version string)
+- removed versioned symbols from libgcc_s.so
+- default dynamic linker paths are changed to /lib/sldl and /lib32/sldl on all archs
+
+kernel:
+- removing symvers from vdso
+- make /proc/sys viewable only by superuser
+- show full process list only to specific group, otherwise show only own user processes
+
+ISSUES
+
+- ix86/x86_64 static linking of very small executables (think "Hello World") result in kill by kernel or segfault. The (possible) workaround is to pass -Wl,-N to gcc at link time. This affects /bin/execvp. Add "export LDFLAGS=-Wl,-N" to config.sh right after "export PATH".
+
+--
+Lynx, Dec2016.

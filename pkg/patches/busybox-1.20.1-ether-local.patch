@@ -1,0 +1,134 @@
+--- busybox-1.20.1.o/networking/Kbuild.src
++++ busybox-1.20.1/networking/Kbuild.src
+@@ -8,7 +8,7 @@
+ 
+ INSERT
+ lib-$(CONFIG_ARP)          += arp.o interface.o
+-lib-$(CONFIG_ARPING)       += arping.o
++lib-$(CONFIG_ARPING)       += arping.o ether_ntoa.o
+ lib-$(CONFIG_BRCTL)        += brctl.o
+ lib-$(CONFIG_DNSD)         += dnsd.o
+ lib-$(CONFIG_ETHER_WAKE)   += ether-wake.o
+@@ -25,7 +25,7 @@
+ lib-$(CONFIG_INETD)        += inetd.o
+ lib-$(CONFIG_IP)           += ip.o
+ lib-$(CONFIG_IPCALC)       += ipcalc.o
+-lib-$(CONFIG_NAMEIF)       += nameif.o
++lib-$(CONFIG_NAMEIF)       += nameif.o ether_aton.o
+ lib-$(CONFIG_NC)           += nc.o
+ lib-$(CONFIG_NETSTAT)      += netstat.o
+ lib-$(CONFIG_NSLOOKUP)     += nslookup.o
+--- busybox-1.20.1.o/networking/arping.c
++++ busybox-1.20.1/networking/arping.c
+@@ -24,7 +24,7 @@
+ 
+ #include <arpa/inet.h>
+ #include <net/if.h>
+-#include <netinet/ether.h>
++#include "ether.h"
+ #include <netpacket/packet.h>
+ 
+ #include "libbb.h"
+--- /dev/null
++++ busybox-1.20.1/networking/ether.h
+@@ -0,0 +1,14 @@
++#ifndef _NETINET_ETHER_H
++#define _NETINET_ETHER_H
++
++#include <netinet/if_ether.h>
++
++char *ether_ntoa (const struct ether_addr *);
++
++struct ether_addr *ether_aton (const char *);
++
++char *ether_ntoa_r (const struct ether_addr *, char *);
++
++struct ether_addr *ether_aton_r (const char *, struct ether_addr *);
++
++#endif
+--- /dev/null
++++ busybox-1.20.1/networking/ether_aton.c
+@@ -0,0 +1,30 @@
++#include <stdlib.h>
++#include <string.h>
++#include "ether.h"
++
++static struct ether_addr a;
++
++struct ether_addr *ether_aton_r (const char *x, struct ether_addr *p_a) {
++	struct ether_addr a;
++	for (int ii = 0; ii < 6; ii++) {
++		unsigned long int n;
++		if (ii != 0) {
++			if (x[0] != ':') return 0; /* bad format */
++			else x++;
++		}
++		{
++			char *y;
++			n = strtoul (x, &y, 16);
++			x = y;
++		}
++		if (n > 0xFF) return 0; /* bad byte */
++		a.ether_addr_octet[ii] = n;
++	}
++	if (x[0] != 0) return 0; /* bad format */
++	memmove (p_a, &a, sizeof (struct ether_addr));
++	return p_a;
++}
++
++struct ether_addr *ether_aton (const char *x) {
++	return ether_aton_r (x, &a);
++}
+--- /dev/null
++++ busybox-1.20.1/networking/ether_ntoa.c
+@@ -0,0 +1,17 @@
++#include <stdio.h>
++#include "ether.h"
++
++static char x[18];
++
++char *ether_ntoa_r (const struct ether_addr *p_a, char *x) {
++	char *y;
++	y = x;
++	for (int ii = 0; ii < 6; ii++) {
++		x += sprintf (x, ii == 0 ? "%.2X" : ":%.2X", p_a -> ether_addr_octet[ii]);
++	}
++	return y;
++}
++
++char *ether_ntoa (const struct ether_addr *p_a) {
++	return ether_ntoa_r (p_a, x);
++}
+--- busybox-1.20.1.o/networking/nameif.c
++++ busybox-1.20.1/networking/nameif.c
+@@ -72,7 +72,7 @@
+ #include "libbb.h"
+ #include <syslog.h>
+ #include <net/if.h>
+-#include <netinet/ether.h>
++#include "ether.h"
+ #include <linux/sockios.h>
+ 
+ #ifndef IFNAMSIZ
+--- busybox-1.20.1.o/networking/udhcp/Kbuild.src
++++ busybox-1.20.1/networking/udhcp/Kbuild.src
+@@ -13,7 +13,7 @@
+ lib-$(CONFIG_UDHCPD)     += common.o packet.o signalpipe.o socket.o
+ 
+ lib-$(CONFIG_UDHCPC)     += dhcpc.o
+-lib-$(CONFIG_UDHCPD)     += dhcpd.o arpping.o files.o leases.o static_leases.o
++lib-$(CONFIG_UDHCPD)     += dhcpd.o arpping.o files.o leases.o static_leases.o ../ether_aton.o ../ether_ntoa.o
+ lib-$(CONFIG_DUMPLEASES) += dumpleases.o
+ lib-$(CONFIG_DHCPRELAY)  += dhcprelay.o
+ 
+--- busybox-1.20.1.o/networking/udhcp/files.c
++++ busybox-1.20.1/networking/udhcp/files.c
+@@ -6,7 +6,7 @@
+  *
+  * Licensed under GPLv2, see file LICENSE in this source tree.
+  */
+-#include <netinet/ether.h>
++#include "../ether.h"
+ 
+ #include "common.h"
+ #include "dhcpd.h"

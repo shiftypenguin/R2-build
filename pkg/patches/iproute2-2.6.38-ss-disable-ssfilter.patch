@@ -1,0 +1,31 @@
+diff -Naur iproute2-2.6.38.o/misc/Makefile iproute2-2.6.38/misc/Makefile
+--- iproute2-2.6.38.o/misc/Makefile	2011-03-18 00:05:47.000000000 +0700
++++ iproute2-2.6.38/misc/Makefile	2012-06-13 14:00:58.775051480 +0800
+@@ -21,9 +21,6 @@
+ arpd: arpd.c
+ 	$(CC) $(CFLAGS) -I$(DBM_INCLUDE) $(LDFLAGS) -o arpd arpd.c $(LIBNETLINK) -ldb -lpthread
+ 
+-ssfilter.c: ssfilter.y
+-	bison ssfilter.y -o ssfilter.c
+-
+ lnstat: $(LNSTATOBJ)
+ 
+ install: all
+@@ -32,4 +29,4 @@
+ 	ln -sf lnstat $(DESTDIR)$(SBINDIR)/ctstat
+ 
+ clean:
+-	rm -f *.o $(TARGETS) ssfilter.c
++	rm -f *.o $(TARGETS)
+diff -Naur iproute2-2.6.38.o/misc/ssfilter.c iproute2-2.6.38/misc/ssfilter.c
+--- iproute2-2.6.38.o/misc/ssfilter.c	1970-01-01 07:00:00.000000000 +0700
++++ iproute2-2.6.38/misc/ssfilter.c	2012-06-13 13:59:04.105051480 +0800
+@@ -0,0 +1,8 @@
++#include <stdio.h>
++#include "ssfilter.h"
++
++int ssfilter_parse(struct ssfilter **f, int argc, char **argv, FILE *fp)
++{
++	fprintf(stderr, " Sorry.\n");
++	return -1;
++}

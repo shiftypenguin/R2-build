@@ -1,0 +1,12 @@
+#!/bin/sh
+
+for if in $(ip l | fgrep \ eth | cut -d':' -f2 | cut -d' ' -f2); do
+	_num=$(echo ${if} | sed 's@^eth@@')
+	ip l set ${if} name hte${_num}
+done
+for if in $(ip l | fgrep \ wlan | cut -d':' -f2 | cut -d' ' -f2); do
+	_num=$(echo ${if} | sed 's@^wlan@@')
+	ip l set ${if} name wl${_num}
+done
+
+exec /bin/env - _INIT=1 HOME=/ TERM=linux execvp /sbin/init ramlinux

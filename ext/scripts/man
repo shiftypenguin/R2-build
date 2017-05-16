@@ -1,0 +1,51 @@
+#!/bin/sh
+
+if [ -f "/etc/man.conf" ]; then
+	source /etc/man.conf
+fi
+
+if [ -z "${MANPATH}" ]; then
+_MANPATH="/man:/share/man:/local/man:/local/share/man"
+else
+_MANPATH="${MANPATH}"
+fi
+_MANCMD="mandoc #MAN# | less"
+_MAXDEPTH=3
+
+if [ -z "${1}" ]; then
+	echo "usage: $(basename ${0}) [DIR] manual"
+	exit 1
+fi
+if [ -n "${1}" -a -n "${2}" ]; then
+	_DIR="${1}"
+	_MAN="${2}"
+elif [ -n "${1}" -a -z "${2}" ]; then
+	_MAN="${1}"
+else
+	_MAN="${1}"
+fi
+
+if [ -f "${_MAN}" ]; then
+	exec sh -c "$(echo ${_MANCMD} | sed -e 's@#MAN#@'"${_MAN}"'@g')"
+fi
+
+IFS=':'
+for _path in "${MANPATH:=${_MANPATH}}"; do
+	if [ -z "${_DIR}" ]; then
+		_OURMAN="$(find ${_path} -maxdepth ${_MAXDEPTH} \( -type f -o -type l \) -name "${_MAN}"\.\* 2>/dev/null | head -n1)"
+	else
+		_OURMAN="$(find ${_path} -maxdepth ${_MAXDEPTH} \( -type f -o -type l \) -name "${_MAN}"\."${_DIR}" 2>/dev/null | head -n1)"
+	fi
+	[ -n "${_OURMAN}" ] && break
+
+done
+
+if [ -z "${_OURMAN}" ]; then
+	if [ -n "${_DIR}" ]; then
+		echo "No manual page for ${_MAN} in section ${_DIR}." >&2
+	else
+		echo "No manual page for ${_MAN}." >&2
+	fi
+	exit 1
+fi
+exec sh -c "$(echo ${_MANCMD} | sed -e 's@#MAN#@'"${_OURMAN}"'@g')"

@@ -1,0 +1,55 @@
+--- /local/src/busybox-1.20.1/networking/ping.c
++++ busybox-1.20.1/networking/ping.c
+@@ -581,8 +581,8 @@
+ }
+ static void unpack4(char *buf, int sz, struct sockaddr_in *from)
+ {
+-	struct icmp *icmppkt;
+-	struct iphdr *iphdr;
++	struct icmp *icmppkt, *t;
++	struct iphdr *iphdr, *T;
+ 	int hlen;
+ 
+ 	/* discard if too short */
+@@ -594,19 +594,23 @@
+ 	hlen = iphdr->ihl << 2;
+ 	sz -= hlen;
+ 	icmppkt = (struct icmp *) (buf + hlen);
+-	if (icmppkt->icmp_id != myid)
+-		return;				/* not our ping */
+ 
+ 	if (icmppkt->icmp_type == ICMP_ECHOREPLY) {
+ 		uint16_t recv_seq = ntohs(icmppkt->icmp_seq);
+ 		uint32_t *tp = NULL;
+ 
++		if (icmppkt->icmp_id != myid)
++			return;				/* not our ping */
+ 		if (sz >= ICMP_MINLEN + sizeof(uint32_t))
+ 			tp = (uint32_t *) icmppkt->icmp_data;
+ 		unpack_tail(sz, tp,
+ 			inet_ntoa(*(struct in_addr *) &from->sin_addr.s_addr),
+ 			recv_seq, iphdr->ttl);
+ 	} else if (icmppkt->icmp_type != ICMP_ECHO) {
++		T = (struct iphdr *)((uint8_t *)iphdr + hlen + ICMP_MINLEN); /* seek ip header and icmp header */
++		t = (struct icmp *)((uint8_t *)T + (T->ihl << 2)); /* seek ip header to appended icmp header */
++		if (t->icmp_id != myid)
++			return;
+ 		bb_error_msg("warning: got ICMP %d (%s)",
+ 				icmppkt->icmp_type,
+ 				icmp_type_name(icmppkt->icmp_type));
+@@ -623,13 +627,13 @@
+ 		return;
+ 
+ 	icmppkt = (struct icmp6_hdr *) packet;
+-	if (icmppkt->icmp6_id != myid)
+-		return;				/* not our ping */
+ 
+ 	if (icmppkt->icmp6_type == ICMP6_ECHO_REPLY) {
+ 		uint16_t recv_seq = ntohs(icmppkt->icmp6_seq);
+ 		uint32_t *tp = NULL;
+ 
++		if (icmppkt->icmp6_id != myid)
++			return;				/* not our ping */
+ 		if (sz >= sizeof(struct icmp6_hdr) + sizeof(uint32_t))
+ 			tp = (uint32_t *) &icmppkt->icmp6_data8[4];
+ 		unpack_tail(sz, tp,

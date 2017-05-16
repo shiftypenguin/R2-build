@@ -1,0 +1,22 @@
+--- musl-1.1.4.o/src/misc/syslog.c
++++ musl-1.1.4/src/misc/syslog.c
+@@ -74,7 +74,7 @@
+ 
+ static void _vsyslog(int priority, const char *message, va_list ap)
+ {
+-	char timebuf[16];
++	char timebuf[24];
+ 	time_t now;
+ 	struct tm tm;
+ 	char buf[256];
+@@ -89,8 +89,8 @@
+ 	if (!(priority & LOG_FACMASK)) priority |= log_facility;
+ 
+ 	now = time(NULL);
+-	gmtime_r(&now, &tm);
+-	strftime(timebuf, sizeof timebuf, "%b %e %T", &tm);
++	localtime_r(&now, &tm);
++	strftime(timebuf, sizeof timebuf, "%b %e %T %Y", &tm);
+ 
+ 	pid = (log_opt & LOG_PID) ? getpid() : 0;
+ 	l = snprintf(buf, sizeof buf, "<%d>%s %n%s%s%.0d%s: ",

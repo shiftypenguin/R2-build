@@ -1,0 +1,5 @@
+#!/bin/sh
+[ -z "${1}" ] && exit 1
+[ -n "${2}" ] && stty -F /dev/${1} speed ${2} >/dev/null
+stty -F /dev/${1} sane
+exec minenv -n HOME=/root -n TERM=linux execvp /bin/sh -sh </dev/${1} >/dev/${1} 2>/dev/${1}

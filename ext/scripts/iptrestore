@@ -1,0 +1,3 @@
+#!/bin/sh
+/sbin/iptables-restore </etc/iptables/iprules
+/sbin/ip6tables-restore </etc/iptables/ip6rules

@@ -1,0 +1,12 @@
+--- dropbear-2014.65.o/svr-session.c
++++ dropbear-2014.65/svr-session.c
+@@ -131,9 +131,6 @@
+ 	/* exchange identification, version etc */
+ 	send_session_identification();
+ 
+-	/* start off with key exchange */
+-	send_msg_kexinit();
+-
+ 	/* Run the main for loop. NULL is for the dispatcher - only the client
+ 	 * code makes use of it */
+ 	session_loop(svr_sessionloop);

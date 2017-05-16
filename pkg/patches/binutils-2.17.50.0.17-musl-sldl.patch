@@ -1,0 +1,256 @@
+diff -Naur binutils-2.17.50.0.17.o/bfd/elf32-bfin.c binutils-2.17.50.0.17/bfd/elf32-bfin.c
+--- binutils-2.17.50.0.17.o/bfd/elf32-bfin.c	2007-06-19 01:31:40.000000000 +0800
++++ binutils-2.17.50.0.17/bfd/elf32-bfin.c	2012-08-03 23:23:39.728980680 +0800
+@@ -3453,7 +3453,7 @@
+ /* The name of the dynamic interpreter.  This is put in the .interp
+    section.  */
+ 
+-#define ELF_DYNAMIC_INTERPRETER "/lib/ld.so.1"
++#define ELF_DYNAMIC_INTERPRETER "/lib32/sldl"
+ 
+ #define DEFAULT_STACK_SIZE 0x20000
+ 
+diff -Naur binutils-2.17.50.0.17.o/bfd/elf32-cris.c binutils-2.17.50.0.17/bfd/elf32-cris.c
+--- binutils-2.17.50.0.17.o/bfd/elf32-cris.c	2007-06-19 01:31:40.000000000 +0800
++++ binutils-2.17.50.0.17/bfd/elf32-cris.c	2012-08-03 23:23:39.737980680 +0800
+@@ -620,7 +620,7 @@
+ /* The name of the dynamic interpreter.  This is put in the .interp
+    section.  */
+ 
+-#define ELF_DYNAMIC_INTERPRETER "/lib/ld.so.1"
++#define ELF_DYNAMIC_INTERPRETER "/lib32/sldl"
+ 
+ /* The size in bytes of an entry in the procedure linkage table.  */
+ 
+diff -Naur binutils-2.17.50.0.17.o/bfd/elf32-frv.c binutils-2.17.50.0.17/bfd/elf32-frv.c
+--- binutils-2.17.50.0.17.o/bfd/elf32-frv.c	2007-06-19 01:31:40.000000000 +0800
++++ binutils-2.17.50.0.17/bfd/elf32-frv.c	2012-08-03 23:23:39.758980680 +0800
+@@ -915,7 +915,7 @@
+ /* The name of the dynamic interpreter.  This is put in the .interp
+    section.  */
+ 
+-#define ELF_DYNAMIC_INTERPRETER "/lib/ld.so.1"
++#define ELF_DYNAMIC_INTERPRETER "/lib32/sldl"
+ 
+ #define DEFAULT_STACK_SIZE 0x20000
+ 
+diff -Naur binutils-2.17.50.0.17.o/bfd/elf32-hppa.c binutils-2.17.50.0.17/bfd/elf32-hppa.c
+--- binutils-2.17.50.0.17.o/bfd/elf32-hppa.c	2007-06-19 01:31:40.000000000 +0800
++++ binutils-2.17.50.0.17/bfd/elf32-hppa.c	2012-08-03 23:23:39.771980680 +0800
+@@ -138,7 +138,7 @@
+ 					  
+ #define PLT_ENTRY_SIZE 8
+ #define GOT_ENTRY_SIZE 4
+-#define ELF_DYNAMIC_INTERPRETER "/lib/ld.so.1"
++#define ELF_DYNAMIC_INTERPRETER "/lib32/sldl"
+ 
+ static const bfd_byte plt_stub[] =
+ {
+diff -Naur binutils-2.17.50.0.17.o/bfd/elf32-i370.c binutils-2.17.50.0.17/bfd/elf32-i370.c
+--- binutils-2.17.50.0.17.o/bfd/elf32-i370.c	2007-06-19 01:29:28.000000000 +0800
++++ binutils-2.17.50.0.17/bfd/elf32-i370.c	2012-08-03 23:23:39.774980680 +0800
+@@ -286,7 +286,7 @@
+ /* The name of the dynamic interpreter.  This is put in the .interp
+     section.  */
+ 
+-#define ELF_DYNAMIC_INTERPRETER "/lib/ld.so"
++#define ELF_DYNAMIC_INTERPRETER "/lib32/sldl"
+ 
+ /* Set the howto pointer for an i370 ELF reloc.  */
+ 
+diff -Naur binutils-2.17.50.0.17.o/bfd/elf32-i386.c binutils-2.17.50.0.17/bfd/elf32-i386.c
+--- binutils-2.17.50.0.17.o/bfd/elf32-i386.c	2007-06-19 01:31:40.000000000 +0800
++++ binutils-2.17.50.0.17/bfd/elf32-i386.c	2012-08-03 23:23:39.781980680 +0800
+@@ -495,7 +495,7 @@
+ /* The name of the dynamic interpreter.  This is put in the .interp
+    section.  */
+ 
+-#define ELF_DYNAMIC_INTERPRETER "/usr/lib/libc.so.1"
++#define ELF_DYNAMIC_INTERPRETER "/lib32/sldl"
+ 
+ /* If ELIMINATE_COPY_RELOCS is non-zero, the linker will try to avoid
+    copying dynamic variables from a shared lib into an app's dynbss
+diff -Naur binutils-2.17.50.0.17.o/bfd/elf32-m32r.c binutils-2.17.50.0.17/bfd/elf32-m32r.c
+--- binutils-2.17.50.0.17.o/bfd/elf32-m32r.c	2007-06-19 01:29:28.000000000 +0800
++++ binutils-2.17.50.0.17/bfd/elf32-m32r.c	2012-08-03 23:23:39.801980680 +0800
+@@ -43,7 +43,7 @@
+ /* The name of the dynamic interpreter.  This is put in the .interp
+    section.  */
+ 
+-#define ELF_DYNAMIC_INTERPRETER "/usr/lib/libc.so.1"
++#define ELF_DYNAMIC_INTERPRETER "/lib32/sldl"
+ 
+ /* The nop opcode we use.  */
+ 
+diff -Naur binutils-2.17.50.0.17.o/bfd/elf32-m68k.c binutils-2.17.50.0.17/bfd/elf32-m68k.c
+--- binutils-2.17.50.0.17.o/bfd/elf32-m68k.c	2007-06-19 01:31:40.000000000 +0800
++++ binutils-2.17.50.0.17/bfd/elf32-m68k.c	2012-08-03 23:23:39.813980680 +0800
+@@ -196,7 +196,7 @@
+ /* The name of the dynamic interpreter.  This is put in the .interp
+    section.  */
+ 
+-#define ELF_DYNAMIC_INTERPRETER "/usr/lib/libc.so.1"
++#define ELF_DYNAMIC_INTERPRETER "/lib32/sldl"
+ 
+ /* Describes one of the various PLT styles.  */
+ 
+diff -Naur binutils-2.17.50.0.17.o/bfd/elf32-ppc.c binutils-2.17.50.0.17/bfd/elf32-ppc.c
+--- binutils-2.17.50.0.17.o/bfd/elf32-ppc.c	2007-06-19 01:31:40.000000000 +0800
++++ binutils-2.17.50.0.17/bfd/elf32-ppc.c	2012-08-03 23:23:39.842980680 +0800
+@@ -51,7 +51,7 @@
+ 
+ /* The name of the dynamic interpreter.  This is put in the .interp
+    section.  */
+-#define ELF_DYNAMIC_INTERPRETER "/usr/lib/ld.so.1"
++#define ELF_DYNAMIC_INTERPRETER "/lib32/sldl"
+ 
+ /* For old-style PLT.  */
+ /* The number of single-slot PLT entries (the rest use two slots).  */
+diff -Naur binutils-2.17.50.0.17.o/bfd/elf32-s390.c binutils-2.17.50.0.17/bfd/elf32-s390.c
+--- binutils-2.17.50.0.17.o/bfd/elf32-s390.c	2007-06-19 01:31:40.000000000 +0800
++++ binutils-2.17.50.0.17/bfd/elf32-s390.c	2012-08-03 23:23:39.848980680 +0800
+@@ -470,7 +470,7 @@
+ /* The name of the dynamic interpreter.  This is put in the .interp
+    section.  */
+ 
+-#define ELF_DYNAMIC_INTERPRETER "/usr/lib/ld.so.1"
++#define ELF_DYNAMIC_INTERPRETER "/lib32/sldl"
+ 
+ /* If ELIMINATE_COPY_RELOCS is non-zero, the linker will try to avoid
+    copying dynamic variables from a shared lib into an app's dynbss
+diff -Naur binutils-2.17.50.0.17.o/bfd/elf32-sh.c binutils-2.17.50.0.17/bfd/elf32-sh.c
+--- binutils-2.17.50.0.17.o/bfd/elf32-sh.c	2007-06-19 01:29:28.000000000 +0800
++++ binutils-2.17.50.0.17/bfd/elf32-sh.c	2012-08-03 23:23:39.870980680 +0800
+@@ -51,7 +51,7 @@
+ /* The name of the dynamic interpreter.  This is put in the .interp
+    section.  */
+ 
+-#define ELF_DYNAMIC_INTERPRETER "/usr/lib/libc.so.1"
++#define ELF_DYNAMIC_INTERPRETER "/lib32/sldl"
+ 
+ #define MINUS_ONE ((bfd_vma) 0 - 1)
+ 
+diff -Naur binutils-2.17.50.0.17.o/bfd/elf32-vax.c binutils-2.17.50.0.17/bfd/elf32-vax.c
+--- binutils-2.17.50.0.17.o/bfd/elf32-vax.c	2007-06-19 01:31:40.000000000 +0800
++++ binutils-2.17.50.0.17/bfd/elf32-vax.c	2012-08-03 23:23:39.888980680 +0800
+@@ -346,7 +346,7 @@
+ /* The name of the dynamic interpreter.  This is put in the .interp
+    section.  */
+ 
+-#define ELF_DYNAMIC_INTERPRETER "/usr/libexec/ld.elf_so"
++#define ELF_DYNAMIC_INTERPRETER "/lib32/sldl"
+ 
+ /* The size in bytes of an entry in the procedure linkage table.  */
+ 
+diff -Naur binutils-2.17.50.0.17.o/bfd/elf32-xtensa.c binutils-2.17.50.0.17/bfd/elf32-xtensa.c
+--- binutils-2.17.50.0.17.o/bfd/elf32-xtensa.c	2007-06-19 01:31:40.000000000 +0800
++++ binutils-2.17.50.0.17/bfd/elf32-xtensa.c	2012-08-03 23:23:39.910980680 +0800
+@@ -426,7 +426,7 @@
+ /* The name of the dynamic interpreter.  This is put in the .interp
+    section.  */
+ 
+-#define ELF_DYNAMIC_INTERPRETER "/lib/ld.so"
++#define ELF_DYNAMIC_INTERPRETER "/lib32/sldl"
+ 
+ /* The size in bytes of an entry in the procedure linkage table.
+    (This does _not_ include the space for the literals associated with
+diff -Naur binutils-2.17.50.0.17.o/bfd/elf64-alpha.c binutils-2.17.50.0.17/bfd/elf64-alpha.c
+--- binutils-2.17.50.0.17.o/bfd/elf64-alpha.c	2007-06-19 01:31:40.000000000 +0800
++++ binutils-2.17.50.0.17/bfd/elf64-alpha.c	2012-08-03 23:23:44.429980680 +0800
+@@ -99,7 +99,7 @@
+ 
+ #define MAX_GOT_SIZE		(64*1024)
+ 
+-#define ELF_DYNAMIC_INTERPRETER "/usr/lib/ld.so"
++#define ELF_DYNAMIC_INTERPRETER "/lib/sldl"
+ 
+ struct alpha_elf_link_hash_entry
+ {
+diff -Naur binutils-2.17.50.0.17.o/bfd/elf64-hppa.c binutils-2.17.50.0.17/bfd/elf64-hppa.c
+--- binutils-2.17.50.0.17.o/bfd/elf64-hppa.c	2007-05-11 23:23:19.000000000 +0800
++++ binutils-2.17.50.0.17/bfd/elf64-hppa.c	2012-08-03 23:23:44.443980680 +0800
+@@ -32,7 +32,7 @@
+ #define DLT_ENTRY_SIZE 0x8
+ #define OPD_ENTRY_SIZE 0x20
+ 
+-#define ELF_DYNAMIC_INTERPRETER "/usr/lib/pa20_64/dld.sl"
++#define ELF_DYNAMIC_INTERPRETER "/lib/sldl"
+ 
+ /* The stub is supposed to load the target address and target's DP
+    value out of the PLT, then do an external branch to the target
+diff -Naur binutils-2.17.50.0.17.o/bfd/elf64-ppc.c binutils-2.17.50.0.17/bfd/elf64-ppc.c
+--- binutils-2.17.50.0.17.o/bfd/elf64-ppc.c	2007-06-19 01:31:40.000000000 +0800
++++ binutils-2.17.50.0.17/bfd/elf64-ppc.c	2012-08-03 23:23:44.477980680 +0800
+@@ -113,7 +113,7 @@
+ 
+ /* The name of the dynamic interpreter.  This is put in the .interp
+    section.  */
+-#define ELF_DYNAMIC_INTERPRETER "/usr/lib/ld.so.1"
++#define ELF_DYNAMIC_INTERPRETER "/lib/sldl"
+ 
+ /* The size in bytes of an entry in the procedure linkage table.  */
+ #define PLT_ENTRY_SIZE 24
+diff -Naur binutils-2.17.50.0.17.o/bfd/elf64-s390.c binutils-2.17.50.0.17/bfd/elf64-s390.c
+--- binutils-2.17.50.0.17.o/bfd/elf64-s390.c	2007-06-19 01:31:40.000000000 +0800
++++ binutils-2.17.50.0.17/bfd/elf64-s390.c	2012-08-03 23:23:44.484980680 +0800
+@@ -493,7 +493,7 @@
+ /* The name of the dynamic interpreter.  This is put in the .interp
+    section.  */
+ 
+-#define ELF_DYNAMIC_INTERPRETER "/usr/lib/ld.so.1"
++#define ELF_DYNAMIC_INTERPRETER "/lib/sldl"
+ 
+ /* If ELIMINATE_COPY_RELOCS is non-zero, the linker will try to avoid
+    copying dynamic variables from a shared lib into an app's dynbss
+diff -Naur binutils-2.17.50.0.17.o/bfd/elf64-sh64.c binutils-2.17.50.0.17/bfd/elf64-sh64.c
+--- binutils-2.17.50.0.17.o/bfd/elf64-sh64.c	2007-06-19 01:29:28.000000000 +0800
++++ binutils-2.17.50.0.17/bfd/elf64-sh64.c	2012-08-03 23:23:44.492980680 +0800
+@@ -55,7 +55,7 @@
+ /* Return offset of the relocation in PLT entry.  */
+ #define elf_sh64_plt_reloc_offset(info) (info->shared ? 52 : 44)
+ 
+-#define ELF_DYNAMIC_INTERPRETER "/usr/lib/libc.so.1"
++#define ELF_DYNAMIC_INTERPRETER "/lib/sldl"
+ 
+ /* The sh linker needs to keep track of the number of relocs that it
+    decides to copy in check_relocs for each symbol.  This is so that
+diff -Naur binutils-2.17.50.0.17.o/bfd/elf64-x86-64.c binutils-2.17.50.0.17/bfd/elf64-x86-64.c
+--- binutils-2.17.50.0.17.o/bfd/elf64-x86-64.c	2007-06-19 01:31:40.000000000 +0800
++++ binutils-2.17.50.0.17/bfd/elf64-x86-64.c	2012-08-03 23:23:44.502980680 +0800
+@@ -344,7 +344,7 @@
+ /* The name of the dynamic interpreter.	 This is put in the .interp
+    section.  */
+ 
+-#define ELF_DYNAMIC_INTERPRETER "/lib/ld64.so.1"
++#define ELF_DYNAMIC_INTERPRETER "/lib/sldl"
+ 
+ /* If ELIMINATE_COPY_RELOCS is non-zero, the linker will try to avoid
+    copying dynamic variables from a shared lib into an app's dynbss
+diff -Naur binutils-2.17.50.0.17.o/bfd/elfxx-ia64.c binutils-2.17.50.0.17/bfd/elfxx-ia64.c
+--- binutils-2.17.50.0.17.o/bfd/elfxx-ia64.c	2007-06-19 01:31:40.000000000 +0800
++++ binutils-2.17.50.0.17/bfd/elfxx-ia64.c	2012-08-03 23:25:03.275980680 +0800
+@@ -676,7 +676,7 @@
+   0x60, 0x00, 0x80, 0x00               /*               br.few b6;;        */
+ };
+ 
+-#define ELF_DYNAMIC_INTERPRETER "/usr/lib/ld.so.1"
++#define ELF_DYNAMIC_INTERPRETER "/lib/sldl"
+ 
+ static const bfd_byte oor_brl[16] =
+ {
+diff -Naur binutils-2.17.50.0.17.o/bfd/elfxx-mips.c binutils-2.17.50.0.17/bfd/elfxx-mips.c
+--- binutils-2.17.50.0.17.o/bfd/elfxx-mips.c	2007-06-19 01:29:28.000000000 +0800
++++ binutils-2.17.50.0.17/bfd/elfxx-mips.c	2012-08-03 23:24:40.105980680 +0800
+@@ -649,9 +649,9 @@
+    section.  */
+ 
+ #define ELF_DYNAMIC_INTERPRETER(abfd) 		\
+-   (ABI_N32_P (abfd) ? "/usr/lib32/libc.so.1" 	\
+-    : ABI_64_P (abfd) ? "/usr/lib64/libc.so.1" 	\
+-    : "/usr/lib/libc.so.1")
++   (ABI_N32_P (abfd) ? "/libn32/sldl" 	\
++    : ABI_64_P (abfd) ? "/lib/sldl" 	\
++    : "/lib32/sldl")
+ 
+ #ifdef BFD64
+ #define MNAME(bfd,pre,pos) \
